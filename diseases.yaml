@@ -1,0 +1,134 @@
+# ============================================================
+# Medical Diagnosis Expert System — Disease Configuration
+#
+# To add a new disease (example: Pneumonia):
+#
+#   1. Add a block under 'diseases:' with:
+#        - threshold (how many yes answers to confirm)
+#        - entry_symptoms (what the patient might say at the start)
+#        - questions (each has a fact name + question text)
+#        - related (other diseases to check if this one fails)
+#
+#   2. Add the new disease name to any relevant lines in
+#      'symptom_routing' below (so the system knows which
+#      symptoms should lead to it).
+#
+#   3. Run:  python3 generate_prolog.py
+#
+#   4. Restart the app.
+#
+# That is all. No Prolog knowledge needed.
+# ============================================================
+
+diseases:
+
+  diabetes:
+    threshold: 3
+    entry_symptoms: [elevated_glucose, polyuria, polydipsia, nausea]
+    questions:
+      - fact: elevated_glucose
+        text: "Have you been told your blood sugar or glucose is high?"
+      - fact: high_hba1c
+        text: "Have you had a blood test showing high HbA1c?"
+      - fact: polyuria
+        text: "Are you urinating much more often than usual?"
+      - fact: polydipsia
+        text: "Are you feeling extremely thirsty most of the time?"
+      - fact: fatigue
+        text: "Are you feeling unusually tired or fatigued?"
+    related: [hypertension, anemia]
+
+  hypertension:
+    threshold: 2
+    entry_symptoms: [headache, elevated_bp, chest_pain]
+    questions:
+      - fact: history_of_hypertension
+        text: "Have you ever been told you have high blood pressure?"
+      - fact: on_bp_medication
+        text: "Are you currently on any blood pressure medication?"
+      - fact: elevated_bp
+        text: "Have you had high blood pressure readings recently?"
+      - fact: hypertension_headache
+        text: "Do you get frequent headaches, especially in the morning?"
+    related: [anemia, diabetes]
+
+  anemia:
+    threshold: 2
+    entry_symptoms: [fatigue, pale_skin, dizziness]
+    questions:
+      - fact: fatigue
+        text: "Do you feel unusually weak or tired most of the time?"
+      - fact: pale_skin
+        text: "Has anyone noticed your skin looks pale lately?"
+      - fact: dizziness
+        text: "Do you feel dizzy or lightheaded when you stand up?"
+    related: [hypertension, diabetes]
+
+  uti:
+    threshold: 2
+    entry_symptoms: [dysuria, urinary_frequency]
+    questions:
+      - fact: dysuria
+        text: "Do you feel pain or burning when you urinate?"
+      - fact: urinary_frequency
+        text: "Do you need to urinate much more often than usual?"
+      - fact: urinary_urgency
+        text: "Do you get sudden, hard-to-control urges to urinate?"
+      - fact: suprapubic_pain
+        text: "Do you feel pressure or pain in your lower abdomen?"
+    related: [diabetes]
+
+  asthma:
+    threshold: 2
+    entry_symptoms: [cough, shortness_of_breath]
+    questions:
+      - fact: chronic_cough
+        text: "Do you have a recurring cough that gets worse at night?"
+      - fact: chest_tightness
+        text: "Do you feel tightness or pressure in your chest?"
+      - fact: wheezing
+        text: "Do you wheeze or hear a whistling sound when you breathe?"
+      - fact: exercise_triggered
+        text: "Does cold air or exercise make your breathing worse?"
+    related: [tuberculosis, anemia]
+
+  tuberculosis:
+    threshold: 2
+    entry_symptoms: [fever, night_sweats, weight_loss]
+    questions:
+      - fact: persistent_cough
+        text: "Have you had a cough lasting more than three weeks?"
+      - fact: coughing_blood
+        text: "Do you cough up blood or blood-stained mucus?"
+      - fact: night_sweats
+        text: "Do you sweat heavily at night even when it is not hot?"
+      - fact: unexplained_weight_loss
+        text: "Have you lost weight recently without trying?"
+      - fact: tb_exposure
+        text: "Have you been in close contact with anyone who had TB?"
+    related: [asthma, anemia]
+
+
+# Maps each opening symptom to the diseases that could explain it.
+# Investigation never goes outside this list for a given symptom.
+# Add your new disease to any lines where it medically belongs.
+
+symptom_routing:
+  headache:            [hypertension, anemia]
+  elevated_bp:         [hypertension, diabetes]
+  chest_pain:          [hypertension, anemia]
+  fatigue:             [anemia, diabetes, hypertension]
+  pale_skin:           [anemia]
+  dizziness:           [anemia, hypertension]
+  polyuria:            [diabetes, uti]
+  polydipsia:          [diabetes]
+  elevated_glucose:    [diabetes, hypertension]
+  nausea:              [diabetes, anemia]
+  dysuria:             [uti]
+  urinary_frequency:   [uti, diabetes]
+  cough:               [asthma, tuberculosis]
+  shortness_of_breath: [asthma, tuberculosis, anemia]
+  fever:               [tuberculosis, uti]
+  night_sweats:        [tuberculosis]
+  weight_loss:         [tuberculosis, diabetes]
+  other:               [diabetes, hypertension, anemia, uti, asthma, tuberculosis]

@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+
+# Auto-generated Prolog (rebuilt from diseases.yaml on startup)
+generated/
+
+# Mac
+.DS_Store
+
+# Temp Prolog session files
+/tmp/*.pl
