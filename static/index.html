@@ -191,6 +191,10 @@ header p  { font-size: 12px; opacity: 0.75; margin-top: 1px; }
     <p>Conversational AI · Prolog rules engine</p>
   </div>
   <div class="badge">🔒 Rules-based diagnosis</div>
+  <button id="restart-btn" title="Restart conversation"
+    style="margin-left:10px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap;">
+    &#8635; Restart
+  </button>
 </header>
 
 <div id="chat"></div>
@@ -215,6 +219,14 @@ const txtEl       = document.getElementById('txt');
 const btnEl       = document.getElementById('btn');
 const newChatBar  = document.getElementById('new-chat-bar');
 const newChatBtn  = document.getElementById('new-chat-btn');
+const restartBtn  = document.getElementById('restart-btn');
+
+function restartChat() {
+  chatEl.innerHTML = '';
+  newChatBar.style.display = 'none';
+  document.getElementById('bar').style.display = 'flex';
+  startSession();
+}
 
 let session = null;
 
@@ -336,12 +348,8 @@ txtEl.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
 
-newChatBtn.addEventListener('click', () => {
-  chatEl.innerHTML = '';
-  newChatBar.style.display = 'none';
-  document.getElementById('bar').style.display = 'flex';
-  startSession();
-});
+newChatBtn.addEventListener('click', restartChat);
+restartBtn.addEventListener('click', restartChat);
 
 /* ---- Start ---- */
 async function startSession() {

@@ -10,5 +10,15 @@ generated/
 # Mac
 .DS_Store
 
+# Windows
+Thumbs.db
+
+# Virtual environments
+venv/
+
+# Office lock files
+~$*.docx
+~$*.doc
+
 # Temp Prolog session files
 /tmp/*.pl

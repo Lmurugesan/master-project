@@ -69,8 +69,20 @@ SYMPTOM_KEYWORDS = {
 YES_WORDS = ['yes', 'yeah', 'yep', 'yup', 'correct', 'right', 'sure', 'absolutely',
              'definitely', 'i do', 'i have', 'that is right', "that's right", 'indeed',
              'true', 'exactly', 'positive', 'affirmative', 'of course']
-NO_WORDS  = ['no', 'nope', 'nah', 'not really', "don't", 'dont', 'never', 'negative',
-             'i do not', 'i don\'t', 'i have not', "i haven't", 'false', 'incorrect']
+
+# Partial answers that lean yes — medically safer to count these as confirmed
+PARTIAL_YES = ['sometimes', 'a bit', 'little', 'kind of', 'sort of', 'slightly',
+               'occasionally', 'at times', 'now and then', 'mild', 'mildly',
+               'somewhat', 'i think so', 'maybe yes', 'probably']
+
+NO_WORDS = ['no', 'nope', 'nah', 'not really', "don't", 'dont', 'never', 'negative',
+            'i do not', "i don't", 'i have not', "i haven't", 'false', 'incorrect',
+            'not at all', 'absolutely not']
+
+# These mean "I don't know" — should NOT count as no
+UNSURE_PATTERNS = ['not sure', "don't know", 'dont know', 'no test', 'not tested',
+                   "haven't tested", 'not taken', 'unknown', 'no idea', 'unsure',
+                   'not checked', 'never checked', 'no result', 'yet to']
 
 
 def extract_symptoms(text):
@@ -86,13 +98,29 @@ def extract_symptoms(text):
 
 
 def detect_yes_no(text):
-    """Return 'yes', 'no', or 'unsure'."""
+    """
+    Return 'yes', 'no', 'unsure', or 'unrecognized'.
+    Priority: unsure-patterns first, then partial-yes, then yes/no keywords.
+    'no test taken yet' → unsure (not no)
+    'sometimes' / 'a little' → yes (lean towards confirming for safety)
+    Anything that doesn't match any known pattern → 'unrecognized', so the
+    caller can re-ask instead of silently treating gibberish as an answer.
+    """
     tl = text.lower().strip()
+
+    # Explicit "I don't know / not tested" → unsure, never count as no
+    if any(p in tl for p in UNSURE_PATTERNS):
+        return 'unsure'
+
+    # Partial yes → count as yes
+    if any(w in tl for w in PARTIAL_YES):
+        return 'yes'
+
     if any(w in tl for w in YES_WORDS):
         return 'yes'
     if any(w in tl for w in NO_WORDS):
         return 'no'
-    return 'unsure'
+    return 'unrecognized'
 
 
 def disease_order_for(confirmed_facts):
@@ -114,13 +142,17 @@ def disease_order_for(confirmed_facts):
 # Prolog bridge
 # ---------------------------------------------------------------------------
 
+# Prolog wants forward slashes in quoted paths even on Windows;
+# BASE comes from os.path and would otherwise contain backslashes there.
+BASE_POSIX = BASE.replace(os.sep, '/')
+
 PROLOG_LOADER = f"""
 :- dynamic fact/1, asked/1.
 :- use_module(library(lists)).
-:- consult('{BASE}/generated/facts.pl').
-:- consult('{BASE}/generated/diseases.pl').
-:- consult('{BASE}/generated/rules.pl').
-:- consult('{BASE}/web_engine.pl').
+:- consult('{BASE_POSIX}/generated/facts.pl').
+:- consult('{BASE_POSIX}/generated/diseases.pl').
+:- consult('{BASE_POSIX}/generated/rules.pl').
+:- consult('{BASE_POSIX}/web_engine.pl').
 """
 
 
@@ -133,7 +165,7 @@ def run_prolog(facts, asked, disease_order):
               + f':- web_run({dl}).\n:- halt.\n')
 
     with tempfile.NamedTemporaryFile(mode='w', suffix='.pl',
-                                     delete=False, dir='/tmp') as tf:
+                                     delete=False, dir=tempfile.gettempdir()) as tf:
         tf.write(script)
         tf_path = tf.name
 
@@ -195,6 +227,41 @@ RULED_OUT = {
     'tuberculosis': "Your answers don't strongly point to tuberculosis. Please do get a chest X-ray to be safe.",
 }
 
+# Confident, disease-specific reason for each confirmed fact — used to explain
+# a diagnosis in direct clinical terms rather than restating the raw fact name.
+FACT_REASON = {
+    # diabetes
+    'elevated_glucose':        "Your blood glucose has been confirmed high, the direct marker of diabetes.",
+    'high_hba1c':               "A blood test has confirmed high HbA1c, showing sustained high blood sugar.",
+    'polyuria':                  "You are urinating far more than normal — a direct result of excess glucose in the urine.",
+    'polydipsia':                "You are experiencing extreme thirst — the body's direct response to fluid loss from polyuria.",
+    'fatigue':                   "You are experiencing persistent fatigue, caused by cells not getting the glucose they need.",
+    # hypertension
+    'history_of_hypertension':  "You have already been diagnosed with high blood pressure in the past.",
+    'on_bp_medication':          "You are currently on blood pressure medication, confirming an existing hypertension diagnosis.",
+    'elevated_bp':               "Your blood pressure readings have been confirmed high.",
+    'hypertension_headache':    "You have frequent morning headaches, a direct symptom of elevated blood pressure overnight.",
+    # anemia
+    'pale_skin':                 "Your skin has been noticeably pale, a direct sign of reduced red blood cell count.",
+    'dizziness':                 "You feel dizzy on standing, caused by reduced oxygen delivery from low red blood cells.",
+    # uti
+    'dysuria':                   "You have pain or burning during urination, the hallmark symptom of a urinary tract infection.",
+    'urinary_frequency':        "You need to urinate far more often than usual, consistent with bladder irritation from infection.",
+    'urinary_urgency':          "You get sudden, hard-to-control urges to urinate, a direct sign of bladder inflammation.",
+    'suprapubic_pain':          "You feel pressure or pain in your lower abdomen, directly over the bladder.",
+    # asthma
+    'chronic_cough':             "You have a recurring cough that worsens at night, a hallmark pattern of asthma.",
+    'chest_tightness':           "You feel tightness or pressure in your chest from narrowed airways.",
+    'wheezing':                  "You wheeze when you breathe, caused by air moving through constricted airways.",
+    'exercise_triggered':        "Cold air or exercise makes your breathing worse, a direct trigger for asthmatic airways.",
+    # tuberculosis
+    'persistent_cough':          "You have had a cough lasting more than three weeks, the defining symptom of tuberculosis.",
+    'coughing_blood':            "You are coughing up blood or blood-stained mucus, a direct sign of lung tissue damage.",
+    'night_sweats':               "You have heavy night sweats, a hallmark systemic sign of active tuberculosis infection.",
+    'unexplained_weight_loss':  "You have lost weight without trying, consistent with the body fighting a chronic infection.",
+    'tb_exposure':                "You have had close contact with someone who had TB, a confirmed exposure route.",
+}
+
 
 def doctor_response_for(prolog_result, session):
     rtype = prolog_result['type']
@@ -225,17 +292,17 @@ def doctor_response_for(prolog_result, session):
     if rtype == 'diagnosed':
         disease  = prolog_result['disease']
         matched  = prolog_result['matched']
-        count    = prolog_result['count']
-        thresh   = prolog_result['threshold']
-        strength = "strongly" if count > thresh else "clearly"
-        syms     = ', '.join(m.replace('_', ' ') for m in matched)
+
+        # Show the three most clinically specific confirmed reasons for this diagnosis.
+        reasons = [FACT_REASON.get(f, f"You confirmed: {f.replace('_', ' ')}.") for f in matched][:3]
+        reasons_block = '\n'.join(f"{i+1}. {r}" for i, r in enumerate(reasons))
+
         return (
             f"Thank you for your patience with all those questions.\n\n"
-            f"Based on the symptoms you have described, this {strength} points to "
-            f"**{disease.upper()}**.\n\n"
-            f"The key symptoms that led me to this conclusion are: {syms}.\n\n"
-            f"⚠️ This is not a confirmed diagnosis. Please follow up with a specialist "
-            f"and run proper lab tests. They will give you a definitive answer."
+            f"This confirms **{disease.upper()}**. Here are the reasons:\n\n"
+            f"{reasons_block}\n\n"
+            f"⚠️ This result is based only on the symptoms you reported in this chat. "
+            f"Please follow up with a specialist and run proper lab tests to confirm it clinically."
         )
 
     if rtype == 'no_diagnosis':
@@ -265,6 +332,7 @@ def start():
         'asked':        [],
         'disease_order': ALL_DISEASES,
         'pending_fact': None,
+        'pending_question': None,
         'order_set':    False,
         'last_intro':   None,
         'last_ruled':   None,
@@ -283,15 +351,29 @@ def chat():
     asked        = session['asked']
     disease_order = session['disease_order']
     pending_fact  = session.get('pending_fact')
+    pending_question = session.get('pending_question')
 
     # --- Handle answer to the current pending question ---
     if pending_fact:
         answer = detect_yes_no(user_message)
+
+        if answer == 'unrecognized':
+            # Don't record anything or advance — ask again for a clear answer.
+            return jsonify({
+                'message': (
+                    "Sorry, I didn't quite catch that. Could you answer with "
+                    "a simple yes or no?\n\n" + (pending_question or '')
+                ).strip(),
+                'session': session,
+                'debug': {'facts': facts, 'asked': asked}
+            })
+
         if answer == 'yes' and pending_fact not in facts:
             facts.append(pending_fact)
         if pending_fact not in asked:
             asked.append(pending_fact)
         session['pending_fact'] = None
+        session['pending_question'] = None
 
     # --- Also extract any freely mentioned symptoms ---
     for sym in extract_symptoms(user_message):
@@ -318,6 +400,7 @@ def chat():
                     session['last_ruled'] = session.get('last_intro')
                 break
         session['pending_fact'] = result['fact']
+        session['pending_question'] = result['question']
 
     if result['type'] in ('diagnosed', 'no_diagnosis'):
         session['done'] = True
