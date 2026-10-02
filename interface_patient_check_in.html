@@ -1,0 +1,364 @@
+<title>Check-In</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root{
+    --ink:#16232e;
+    --ink-soft:#41525c;
+    --paper:#eef2f1;
+    --surface:#ffffff;
+    --surface-2:#f5f7f6;
+    --line:#d7dedb;
+    --line-soft:#e6ebe9;
+    --muted:#5b6b68;
+    --accent:#2f7d6b;
+    --accent-ink:#eaf5f1;
+    --accent-strong:#1f5c4e;
+    --warn:#b5502e;
+    --warn-bg:#fbeee7;
+    --warn-line:#e8c4ae;
+    --patient-bubble:#eef2f1;
+    --focus:#2f7d6b;
+    --shadow: 0 1px 2px rgba(22,35,46,.06), 0 10px 28px rgba(22,35,46,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#e8edea; --ink-soft:#b7c4c0; --paper:#101617; --surface:#161e20;
+      --surface-2:#1b2426; --line:#293335; --line-soft:#222b2d; --muted:#93a29e;
+      --accent:#4fae95; --accent-ink:#0f2621; --accent-strong:#7bc9b3;
+      --warn:#e08a5f; --warn-bg:#2a1c15; --warn-line:#4a3223;
+      --patient-bubble:#1b2426;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#e8edea; --ink-soft:#b7c4c0; --paper:#101617; --surface:#161e20;
+    --surface-2:#1b2426; --line:#293335; --line-soft:#222b2d; --muted:#93a29e;
+    --accent:#4fae95; --accent-ink:#0f2621; --accent-strong:#7bc9b3;
+    --warn:#e08a5f; --warn-bg:#2a1c15; --warn-line:#4a3223;
+    --patient-bubble:#1b2426;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    font-size:15px; line-height:1.55;
+    display:flex; justify-content:center;
+  }
+  h1,h2,h3{ font-family:'Source Serif 4', Georgia, serif; text-wrap:balance; margin:0; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; }
+
+  .app{
+    width:100%; max-width:640px; min-height:100dvh;
+    background:var(--surface);
+    display:flex; flex-direction:column;
+    border-left:1px solid var(--line); border-right:1px solid var(--line);
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex; align-items:center; gap:12px;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    background:var(--surface);
+  }
+  .mark{
+    width:38px; height:38px; border-radius:10px;
+    background:var(--accent-ink); color:var(--accent-strong);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Source Serif 4'; font-weight:600; font-size:17px;
+  }
+  header .title h1{ font-size:17px; font-weight:600; }
+  header .title p{ margin:2px 0 0; font-size:12px; color:var(--muted); }
+  header .spacer{ flex:1; }
+  .restart{
+    display:flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Sans'; font-size:12.5px; font-weight:500;
+    color:var(--muted); background:transparent; border:1px solid var(--line);
+    padding:7px 12px; border-radius:999px; cursor:pointer;
+  }
+  .restart:hover{ border-color:var(--accent); color:var(--accent-strong); }
+
+  .trust{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:10px 20px; font-size:11.5px; color:var(--muted);
+    border-bottom:1px solid var(--line-soft); background:var(--surface-2);
+  }
+  .trust .chip{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:3px 9px; border-radius:999px; background:var(--surface); border:1px solid var(--line);
+  }
+  .trust .chip .dot{ width:5px; height:5px; border-radius:50%; background:var(--accent); }
+
+  /* ---------- Conversation ---------- */
+  .thread{
+    flex:1; padding:22px 20px 8px; display:flex; flex-direction:column; gap:14px;
+  }
+  .row{ display:flex; gap:10px; align-items:flex-end; }
+  .row.system{ justify-content:flex-start; }
+  .row.patient{ justify-content:flex-end; }
+  .row .icon{
+    width:28px; height:28px; border-radius:50%; flex-shrink:0;
+    background:var(--accent-ink); color:var(--accent-strong);
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  .row.patient .icon{ display:none; }
+  .bubble{
+    max-width:78%; padding:11px 15px; border-radius:16px; font-size:14.5px;
+  }
+  .row.system .bubble{
+    background:var(--surface-2); color:var(--ink); border:1px solid var(--line-soft);
+    border-radius:4px 16px 16px 16px;
+  }
+  .row.patient .bubble{
+    background:var(--accent); color:var(--accent-ink);
+    border-radius:16px 16px 4px 16px;
+  }
+  .row.patient .bubble.unsure{ background:var(--ink-soft); }
+
+  .classify-tag{
+    display:inline-flex; align-items:center; gap:5px; margin-top:6px;
+    font-size:10.5px; font-weight:500; color:var(--accent-ink); opacity:.85;
+  }
+  .classify-tag .dot{ width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+  /* diagnosis card */
+  .result-card{
+    margin:6px 0 0; background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .result-head{
+    display:flex; align-items:center; gap:10px; padding:14px 18px;
+    background:var(--accent-ink); border-bottom:1px solid var(--line-soft);
+  }
+  .result-head .ic{ font-size:18px; }
+  .result-head .label{ font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-strong); }
+  .result-head h2{ font-size:19px; font-weight:600; color:var(--accent-strong); text-transform:capitalize; }
+
+  .result-body{ padding:14px 18px 6px; }
+  .result-body > p{ margin:0 0 10px; font-size:13.5px; color:var(--ink-soft); }
+
+  .why-toggle{
+    display:flex; align-items:center; gap:8px; width:100%;
+    background:transparent; border:1px solid var(--line); border-radius:10px;
+    padding:10px 14px; margin:4px 0 4px; cursor:pointer;
+    font-family:'IBM Plex Sans'; font-size:13px; font-weight:500; color:var(--ink);
+  }
+  .why-toggle:hover{ border-color:var(--accent); }
+  .why-toggle .chev{ margin-left:auto; transition:transform .15s ease; color:var(--muted); }
+  .why-toggle[aria-expanded="true"] .chev{ transform:rotate(180deg); }
+
+  .why-panel{
+    display:none; padding:4px 2px 14px;
+  }
+  .why-panel.open{ display:block; }
+  .trace{ display:flex; flex-direction:column; gap:0; margin-top:6px; }
+  .trace-step{
+    display:grid; grid-template-columns:20px 1fr; gap:10px;
+    padding:8px 0; position:relative;
+  }
+  .trace-step .stem{
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .trace-step .node{
+    width:9px; height:9px; border-radius:50%; background:var(--accent); margin-top:5px;
+    flex-shrink:0;
+  }
+  .trace-step .line{
+    width:1.5px; flex:1; background:var(--line); margin-top:2px;
+  }
+  .trace-step:last-child .line{ display:none; }
+  .trace-step .content b{ font-weight:600; }
+  .trace-step .content{ font-size:13px; color:var(--ink-soft); padding-top:0; }
+  .trace-step .content .fact-code{
+    font-family:'IBM Plex Mono'; font-size:11px; color:var(--accent-strong);
+    background:var(--accent-ink); padding:1px 6px; border-radius:5px; margin-left:4px;
+  }
+
+  .disclaimer-line{
+    display:flex; gap:8px; align-items:flex-start;
+    margin:8px 0 4px; padding:10px 12px; border-radius:9px;
+    background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn);
+    font-size:12px; line-height:1.5;
+  }
+
+  /* typing */
+  .typing{ display:flex; gap:5px; padding:13px 16px; background:var(--surface-2); border-radius:4px 16px 16px 16px; width:fit-content; border:1px solid var(--line-soft); }
+  .typing span{ width:6px; height:6px; border-radius:50%; background:var(--muted); animation:bop 1.3s ease-in-out infinite; }
+  .typing span:nth-child(2){ animation-delay:.16s; } .typing span:nth-child(3){ animation-delay:.32s; }
+  @keyframes bop{ 0%,60%,100%{ transform:translateY(0); } 30%{ transform:translateY(-5px); } }
+
+  /* ---------- Input ---------- */
+  .composer{
+    display:flex; gap:10px; align-items:center;
+    padding:14px 20px; border-top:1px solid var(--line); background:var(--surface);
+  }
+  .composer input{
+    flex:1; border:1.5px solid var(--line); border-radius:22px;
+    padding:11px 16px; font-size:14.5px; font-family:inherit; background:var(--surface-2); color:var(--ink);
+  }
+  .composer input:focus{ outline:none; border-color:var(--accent); background:var(--surface); }
+  .composer button{
+    width:42px; height:42px; border-radius:50%; border:none; flex-shrink:0;
+    background:var(--accent); color:var(--accent-ink); font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .composer button:hover{ background:var(--accent-strong); }
+  .foot-note{ text-align:center; font-size:10.5px; color:var(--muted); padding:0 20px 14px; }
+</style>
+
+<div class="app">
+  <header>
+    <div class="mark">＋</div>
+    <div class="title">
+      <h1>Check-In</h1>
+      <p>Symptom screening · rule-based reasoning</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="restart" id="restartBtn">↺ Restart</button>
+  </header>
+
+  <div class="trust">
+    <span class="chip"><span class="dot"></span>Not a diagnosis</span>
+    <span class="chip"><span class="dot"></span>Every result is traceable</span>
+    <span class="chip"><span class="dot"></span>No account needed</span>
+  </div>
+
+  <div class="thread" id="thread">
+    <div class="row system">
+      <div class="icon">⚕</div>
+      <div class="bubble">Hello — I'm here to help figure out what might be going on. What's been bothering you the most lately? Describe it in your own words.</div>
+    </div>
+
+    <div class="row patient">
+      <div class="bubble">My blood sugar has been running high and I've been going to the bathroom constantly.</div>
+    </div>
+
+    <div class="row system">
+      <div class="icon">⚕</div>
+      <div class="bubble">I see. Let me ask a few questions about your blood sugar and related symptoms.<br><br>Have you had a blood test showing a high HbA1c level?</div>
+    </div>
+
+    <div class="row patient">
+      <div class="bubble unsure">I haven't had that test done.</div>
+    </div>
+
+    <div class="row system">
+      <div class="icon">⚕</div>
+      <div class="bubble">Are you feeling unusually thirsty most of the time?</div>
+    </div>
+
+    <div class="row patient">
+      <div class="bubble">Yes, constantly — I can't seem to drink enough water.</div>
+    </div>
+
+    <div class="row system">
+      <div class="icon">⚕</div>
+      <div class="bubble" style="max-width:100%">
+        Thank you for your patience with those questions.
+        <div class="result-card">
+          <div class="result-head">
+            <span class="ic">✓</span>
+            <div>
+              <div class="label">This confirms</div>
+              <h2>Diabetes</h2>
+            </div>
+          </div>
+          <div class="result-body">
+            <p>Three confirmed signs met the threshold for this result: reported high blood glucose, frequent urination, and persistent excessive thirst.</p>
+
+            <button class="why-toggle" id="whyToggle" aria-expanded="false">
+              <span>See exactly how this was decided</span>
+              <span class="chev">⌄</span>
+            </button>
+            <div class="why-panel" id="whyPanel">
+              <div class="trace">
+                <div class="trace-step">
+                  <div class="stem"><div class="node"></div><div class="line"></div></div>
+                  <div class="content"><b>Recognized from your first message:</b> high blood glucose <span class="fact-code">elevated_glucose</span> and frequent urination <span class="fact-code">polyuria</span></div>
+                </div>
+                <div class="trace-step">
+                  <div class="stem"><div class="node"></div><div class="line"></div></div>
+                  <div class="content"><b>Narrowed to:</b> Diabetes and Hypertension — the only conditions high glucose could indicate</div>
+                </div>
+                <div class="trace-step">
+                  <div class="stem"><div class="node"></div><div class="line"></div></div>
+                  <div class="content"><b>Asked about HbA1c:</b> answer was uncertain, so nothing was counted for or against</div>
+                </div>
+                <div class="trace-step">
+                  <div class="stem"><div class="node"></div><div class="line"></div></div>
+                  <div class="content"><b>Asked about thirst:</b> confirmed <span class="fact-code">polydipsia</span> — count reached 3</div>
+                </div>
+                <div class="trace-step">
+                  <div class="stem"><div class="node"></div></div>
+                  <div class="content"><b>Diabetes threshold is 3</b> — reached, so the result was returned. Hypertension was never checked.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="disclaimer-line">
+              This is a screening result based only on what you shared here — not a lab-confirmed diagnosis. Please follow up with a clinician for proper testing.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="composer">
+    <input type="text" id="msgInput" placeholder="Type your answer…">
+    <button id="sendBtn" aria-label="Send">➤</button>
+  </div>
+  <div class="foot-note">Check-In is a screening aid, not a substitute for professional medical advice.</div>
+</div>
+
+<script>
+(function(){
+  var whyToggle = document.getElementById('whyToggle');
+  var whyPanel = document.getElementById('whyPanel');
+  whyToggle.addEventListener('click', function(){
+    var open = whyPanel.classList.toggle('open');
+    whyToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
+  var thread = document.getElementById('thread');
+  var input = document.getElementById('msgInput');
+  var sendBtn = document.getElementById('sendBtn');
+  var restartBtn = document.getElementById('restartBtn');
+
+  function addRow(text, who){
+    var row = document.createElement('div');
+    row.className = 'row ' + who;
+    var html = '';
+    if(who === 'system'){ html += '<div class="icon">⚕</div>'; }
+    html += '<div class="bubble">' + text + '</div>';
+    row.innerHTML = html;
+    thread.appendChild(row);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function send(){
+    var v = input.value.trim();
+    if(!v) return;
+    addRow(v.replace(/</g,'&lt;'), 'patient');
+    input.value = '';
+    var typing = document.createElement('div');
+    typing.className = 'row system';
+    typing.innerHTML = '<div class="icon">⚕</div><div class="typing"><span></span><span></span><span></span></div>';
+    thread.appendChild(typing);
+    thread.scrollTop = thread.scrollHeight;
+    setTimeout(function(){
+      typing.remove();
+      addRow('Thanks — noted. (This is a static preview; the live app continues the real conversation.)', 'system');
+    }, 700);
+  }
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') send(); });
+
+  restartBtn.addEventListener('click', function(){
+    location.reload();
+  });
+})();
+</script>

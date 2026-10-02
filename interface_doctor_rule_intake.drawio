@@ -1,0 +1,114 @@
+<mxfile host="app.diagrams.net" agent="claude">
+  <diagram name="Rule Intake Wireframe" id="ruleintake-wf">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="900" pageHeight="640" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+
+        <mxCell id="frame" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry x="20" y="20" width="860" height="560" as="geometry" />
+        </mxCell>
+
+        <!-- top bar -->
+        <mxCell id="topbar" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=12;fontSize=12;fontStyle=1;" value="Rule Intake &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;[ 1 draft awaiting confirmation ]   Dr. S. Kapoor" vertex="1">
+          <mxGeometry x="20" y="20" width="860" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- sidebar -->
+        <mxCell id="sidebar" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;verticalAlign=top;align=left;spacingLeft=10;spacingTop=10;fontSize=10;fontStyle=1;" value="KNOWLEDGE BASE &#160;&#160;&#160;&#160;&#160;&#160;7 conditions" vertex="1">
+          <mxGeometry x="20" y="60" width="210" height="520" as="geometry" />
+        </mxCell>
+
+        <mxCell id="kb1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=9;" value="Diabetes &#160;&#160;[confirmed]&#10;threshold 3 &#183; facts 5" vertex="1">
+          <mxGeometry x="32" y="96" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="kb2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=9;" value="Hypertension &#160;[confirmed]&#10;threshold 2 &#183; facts 4" vertex="1">
+          <mxGeometry x="32" y="134" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="kb3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=9;" value="Anemia &#160;&#160;[confirmed]&#10;threshold 2 &#183; facts 3" vertex="1">
+          <mxGeometry x="32" y="172" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="kb4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=9;" value="UTI &#160;&#160;&#160;&#160;&#160;&#160;&#160;[confirmed]&#10;threshold 2 &#183; facts 4" vertex="1">
+          <mxGeometry x="32" y="210" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="kb5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=9;" value="Asthma &#160;&#160;[confirmed]&#10;threshold 2 &#183; facts 4" vertex="1">
+          <mxGeometry x="32" y="248" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="kb6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=9;" value="Tuberculosis &#160;[confirmed]&#10;threshold 2 &#183; facts 5" vertex="1">
+          <mxGeometry x="32" y="286" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="kb7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;align=left;spacingLeft=8;fontSize=9;fontStyle=1;" value="Migraine &#160;&#160;&#160;&#160;[DRAFT]&#10;threshold 3 &#183; facts 4" vertex="1">
+          <mxGeometry x="32" y="324" width="186" height="34" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sbnote" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;align=left;spacingLeft=8;fontSize=8;" value="A rule only reaches this list once a doctor confirms it. Nothing is added automatically." vertex="1">
+          <mxGeometry x="32" y="500" width="186" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- main -->
+        <mxCell id="mainhead" parent="1" style="text;html=1;align=left;fillColor=none;strokeColor=none;fontSize=14;fontStyle=1;" value="Add condition -- Migraine" vertex="1">
+          <mxGeometry x="250" y="70" width="400" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="mainsub" parent="1" style="text;html=1;align=left;fillColor=none;strokeColor=none;fontSize=9;" value="Describe what you'd confirm a diagnosis from, in your own words." vertex="1">
+          <mxGeometry x="250" y="94" width="500" height="18" as="geometry" />
+        </mxCell>
+
+        <mxCell id="turn1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=9;verticalAlign=top;spacingTop=6;" value="YOU: I'd like to add migraine. Moderate-severe headache, often one-sided, with nausea and light/sound sensitivity. At least 3 of those confirms it." vertex="1">
+          <mxGeometry x="250" y="120" width="600" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="turn2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=9;verticalAlign=top;spacingTop=6;" value="RULE INTAKE: Read 4 candidate symptoms and a confirmation count of 3. Routed &quot;headache&quot; to include Migraine. Review the draft below." vertex="1">
+          <mxGeometry x="250" y="172" width="600" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- draft card -->
+        <mxCell id="draftOuter" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1.5;" value="" vertex="1">
+          <mxGeometry x="250" y="226" width="600" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="draftHead" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=10;fontSize=10;fontStyle=1;" value="[DRAFT - UNCONFIRMED]   New condition: Migraine" vertex="1">
+          <mxGeometry x="250" y="226" width="600" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fThresh" parent="1" style="text;html=1;align=left;fillColor=none;strokeColor=none;fontSize=9;fontStyle=1;" value="THRESHOLD" vertex="1">
+          <mxGeometry x="266" y="268" width="120" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="fThreshVal" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=10;" value="-  3  +   of 4 facts" vertex="1">
+          <mxGeometry x="390" y="264" width="160" height="26" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fFacts" parent="1" style="text;html=1;align=left;fillColor=none;strokeColor=none;fontSize=9;fontStyle=1;" value="CONFIRMING FACTS" vertex="1">
+          <mxGeometry x="266" y="304" width="140" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="fact1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=8.5;" value="Throbbing one-sided headache?  ->  throbbing_unilateral_headache   x" vertex="1">
+          <mxGeometry x="390" y="300" width="440" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="fact2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=8.5;" value="Nauseous during episodes?  ->  migraine_nausea   x" vertex="1">
+          <mxGeometry x="390" y="328" width="440" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="fact3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=8.5;" value="Light bothers you?  ->  photophobia   x" vertex="1">
+          <mxGeometry x="390" y="356" width="440" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="fact4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=8.5;" value="Sound bothers you?  ->  phonophobia   x" vertex="1">
+          <mxGeometry x="390" y="384" width="440" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="addFact" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;fontSize=8.5;" value="+ add a confirming fact" vertex="1">
+          <mxGeometry x="390" y="412" width="180" height="22" as="geometry" />
+        </mxCell>
+
+        <mxCell id="routing" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;align=left;spacingLeft=8;fontSize=8.5;" value="ROUTING: headache now routes to Hypertension, Anemia, and Migraine." vertex="1">
+          <mxGeometry x="266" y="444" width="564" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="confirmBtn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;fontSize=9.5;fontStyle=1;" value="Add to Knowledge Base" vertex="1">
+          <mxGeometry x="266" y="484" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="discardBtn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=9.5;" value="Discard draft" vertex="1">
+          <mxGeometry x="456" y="484" width="120" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cap" parent="1" style="text;html=1;align=center;fillColor=none;strokeColor=none;fontSize=11;fontStyle=1;" value="Rule Intake -- doctor knowledge-acquisition interface (wireframe)" vertex="1">
+          <mxGeometry x="20" y="590" width="860" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

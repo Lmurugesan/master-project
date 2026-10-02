@@ -62,7 +62,39 @@ Windows (Command Prompt or PowerShell):
 
 
 ------------------------------------------------------------
-3. RUNNING THE WEB APP
+3. OPTIONAL: LLM-BASED SYMPTOM PARSING
+------------------------------------------------------------
+By default the web app recognizes symptoms in free text with a keyword
+lexicon (extract_symptoms in app.py) — no API key needed, works offline.
+
+You can optionally replace that step with an LLM call for more natural,
+paraphrase-robust symptom recognition (llm_extract.py). This ONLY changes
+how the opening free-text statement is mapped to the fixed set of symptom
+atoms the Prolog rules already know about; the rest of the reasoning
+(routing, thresholds, diagnosis) is untouched and still fully symbolic.
+
+Set these environment variables before running app.py:
+
+    LLM_PROVIDER=anthropic   (or: openai, deepseek)
+    ANTHROPIC_API_KEY=...    (or OPENAI_API_KEY / DEEPSEEK_API_KEY to match)
+
+Example (macOS/Linux):
+    export LLM_PROVIDER=anthropic
+    export ANTHROPIC_API_KEY=sk-ant-...
+    python3 app.py
+
+Example (Windows PowerShell):
+    $env:LLM_PROVIDER="anthropic"
+    $env:ANTHROPIC_API_KEY="sk-ant-..."
+    py app.py
+
+If LLM_PROVIDER is unset, or the API call fails for any reason (no key,
+network error, timeout), the app automatically falls back to the keyword
+lexicon — it never breaks the chat.
+
+
+------------------------------------------------------------
+4. RUNNING THE WEB APP
 ------------------------------------------------------------
 macOS / Linux:
     python3 app.py
@@ -78,7 +110,7 @@ To stop the server: Ctrl+C in the terminal it's running in.
 
 
 ------------------------------------------------------------
-4. RUNNING THE CONSOLE APP
+5. RUNNING THE CONSOLE APP
 ------------------------------------------------------------
 1. Open SWI-Prolog:
      macOS/Linux:  swipl
@@ -115,7 +147,7 @@ Always end your answer with a period:
 
 
 ------------------------------------------------------------
-5. FILE STRUCTURE AND PURPOSE
+6. FILE STRUCTURE AND PURPOSE
 ------------------------------------------------------------
 
 Console reference implementation (repository root):
@@ -142,6 +174,10 @@ Web deployment:
   app.py                Flask routes, free-text symptom extraction,
                          yes/no answer classification, and the templated
                          doctor dialogue for the web UI.
+  llm_extract.py         Optional LLM-based symptom extraction (Section 3
+                         above); falls back to the keyword lexicon in
+                         app.py whenever no key is configured or the call
+                         fails.
   static/index.html     The browser chat interface.
 
 NOTE: the console app's knowledge base (facts.pl / diseases.pl /
@@ -152,7 +188,7 @@ both front ends to stay in sync.
 
 
 ------------------------------------------------------------
-6. HOW TO ADD A NEW DISEASE
+7. HOW TO ADD A NEW DISEASE
 ------------------------------------------------------------
 Web app (recommended — one file):
   1. Add a block under `diseases:` in diseases.yaml with a threshold,
@@ -178,7 +214,7 @@ to change either way — only data files.
 
 
 ------------------------------------------------------------
-7. TROUBLESHOOTING
+8. TROUBLESHOOTING
 ------------------------------------------------------------
 "swipl is not recognized" (Windows):
     SWI-Prolog's bin folder isn't on PATH. Reinstall and check the

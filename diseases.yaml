@@ -6,8 +6,22 @@
 #   1. Add a block under 'diseases:' with:
 #        - threshold (how many yes answers to confirm)
 #        - entry_symptoms (what the patient might say at the start)
-#        - questions (each has a fact name + question text)
+#        - questions (each has a fact name + question text + severity)
 #        - related (other diseases to check if this one fails)
+#
+#   severity (1-5) is the clinical weight of that symptom on its own: how
+#   specific or serious that single sign is, e.g. "confirmed high HbA1c"
+#   (5) versus "occasional fatigue" (2). Within a disease, questions are
+#   asked highest-severity first. Omit it and it defaults to 3 (medium).
+#
+#   primary: true marks a defining/hallmark symptom for that disease — one
+#   specific enough that confirming it ALONE is sufficient, the way a real
+#   doctor would treat a hallmark sign (e.g. dysuria for a UTI, coughing
+#   blood for TB) rather than waiting to tally a fixed count of lesser
+#   symptoms. A disease is confirmed as soon as EITHER any one primary
+#   question is answered yes, OR the plain fact-count reaches threshold —
+#   whichever comes first. Most diseases have one or two primary questions;
+#   the rest fall back to the ordinary threshold count.
 #
 #   2. Add the new disease name to any relevant lines in
 #      'symptom_routing' below (so the system knows which
@@ -20,6 +34,19 @@
 # That is all. No Prolog knowledge needed.
 # ============================================================
 
+# Broad category each disease belongs to. This drives the first stage of
+# reasoning: before asking disease-specific questions, the system narrows
+# to a category (e.g. "metabolic" vs "respiratory") so the conversation is
+# a staged chain — category, then specific disease — not a single flat
+# list of unrelated diseases.
+categories:
+  diabetes:      metabolic
+  hypertension:  cardiovascular
+  anemia:        hematologic
+  uti:           urinary
+  asthma:        respiratory
+  tuberculosis:  respiratory
+
 diseases:
 
   diabetes:
@@ -28,14 +55,21 @@ diseases:
     questions:
       - fact: elevated_glucose
         text: "Have you been told your blood sugar or glucose is high?"
+        severity: 5
+        primary: true
       - fact: high_hba1c
         text: "Have you had a blood test showing high HbA1c?"
+        severity: 5
+        primary: true
       - fact: polyuria
         text: "Are you urinating much more often than usual?"
+        severity: 3
       - fact: polydipsia
         text: "Are you feeling extremely thirsty most of the time?"
+        severity: 3
       - fact: fatigue
         text: "Are you feeling unusually tired or fatigued?"
+        severity: 2
     related: [hypertension, anemia]
 
   hypertension:
@@ -44,12 +78,18 @@ diseases:
     questions:
       - fact: history_of_hypertension
         text: "Have you ever been told you have high blood pressure?"
+        severity: 4
       - fact: on_bp_medication
         text: "Are you currently on any blood pressure medication?"
+        severity: 5
+        primary: true
       - fact: elevated_bp
         text: "Have you had high blood pressure readings recently?"
+        severity: 5
+        primary: true
       - fact: hypertension_headache
         text: "Do you get frequent headaches, especially in the morning?"
+        severity: 2
     related: [anemia, diabetes]
 
   anemia:
@@ -58,10 +98,14 @@ diseases:
     questions:
       - fact: fatigue
         text: "Do you feel unusually weak or tired most of the time?"
+        severity: 3
       - fact: pale_skin
         text: "Has anyone noticed your skin looks pale lately?"
+        severity: 4
+        primary: true
       - fact: dizziness
         text: "Do you feel dizzy or lightheaded when you stand up?"
+        severity: 3
     related: [hypertension, diabetes]
 
   uti:
@@ -70,12 +114,17 @@ diseases:
     questions:
       - fact: dysuria
         text: "Do you feel pain or burning when you urinate?"
+        severity: 5
+        primary: true
       - fact: urinary_frequency
         text: "Do you need to urinate much more often than usual?"
+        severity: 3
       - fact: urinary_urgency
         text: "Do you get sudden, hard-to-control urges to urinate?"
+        severity: 3
       - fact: suprapubic_pain
         text: "Do you feel pressure or pain in your lower abdomen?"
+        severity: 4
     related: [diabetes]
 
   asthma:
@@ -84,12 +133,17 @@ diseases:
     questions:
       - fact: chronic_cough
         text: "Do you have a recurring cough that gets worse at night?"
+        severity: 3
       - fact: chest_tightness
         text: "Do you feel tightness or pressure in your chest?"
+        severity: 4
       - fact: wheezing
         text: "Do you wheeze or hear a whistling sound when you breathe?"
+        severity: 5
+        primary: true
       - fact: exercise_triggered
         text: "Does cold air or exercise make your breathing worse?"
+        severity: 2
     related: [tuberculosis, anemia]
 
   tuberculosis:
@@ -98,14 +152,20 @@ diseases:
     questions:
       - fact: persistent_cough
         text: "Have you had a cough lasting more than three weeks?"
+        severity: 4
       - fact: coughing_blood
         text: "Do you cough up blood or blood-stained mucus?"
+        severity: 5
+        primary: true
       - fact: night_sweats
         text: "Do you sweat heavily at night even when it is not hot?"
+        severity: 4
       - fact: unexplained_weight_loss
         text: "Have you lost weight recently without trying?"
+        severity: 4
       - fact: tb_exposure
         text: "Have you been in close contact with anyone who had TB?"
+        severity: 3
     related: [asthma, anemia]
 
 

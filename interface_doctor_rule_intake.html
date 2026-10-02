@@ -1,0 +1,493 @@
+<title>Rule Intake</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root{
+    --ink:#16232e;
+    --ink-soft:#41525c;
+    --paper:#eef2f1;
+    --surface:#ffffff;
+    --surface-2:#f5f7f6;
+    --line:#d7dedb;
+    --line-soft:#e6ebe9;
+    --muted:#5b6b68;
+    --accent:#2f7d6b;
+    --accent-ink:#eaf5f1;
+    --accent-strong:#1f5c4e;
+    --warn:#b5502e;
+    --warn-bg:#fbeee7;
+    --warn-line:#e8c4ae;
+    --focus:#2f7d6b;
+    --shadow: 0 1px 2px rgba(22,35,46,.06), 0 8px 24px rgba(22,35,46,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#e8edea;
+      --ink-soft:#b7c4c0;
+      --paper:#101617;
+      --surface:#161e20;
+      --surface-2:#1b2426;
+      --line:#293335;
+      --line-soft:#222b2d;
+      --muted:#93a29e;
+      --accent:#4fae95;
+      --accent-ink:#0f2621;
+      --accent-strong:#7bc9b3;
+      --warn:#e08a5f;
+      --warn-bg:#2a1c15;
+      --warn-line:#4a3223;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#e8edea;
+    --ink-soft:#b7c4c0;
+    --paper:#101617;
+    --surface:#161e20;
+    --surface-2:#1b2426;
+    --line:#293335;
+    --line-soft:#222b2d;
+    --muted:#93a29e;
+    --accent:#4fae95;
+    --accent-ink:#0f2621;
+    --accent-strong:#7bc9b3;
+    --warn:#e08a5f;
+    --warn-bg:#2a1c15;
+    --warn-line:#4a3223;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    font-size:14px; line-height:1.5;
+  }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; }
+  h1,h2,h3{ font-family:'Source Serif 4', Georgia, serif; text-wrap:balance; margin:0; }
+
+  .shell{
+    display:grid;
+    grid-template-columns: 296px 1fr;
+    min-height:100dvh;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    grid-column: 1 / -1;
+    display:flex; align-items:center; gap:14px;
+    padding:14px 22px;
+    border-bottom:1px solid var(--line);
+    background:var(--surface);
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand h1{ font-size:19px; font-weight:600; letter-spacing:-.01em; }
+  .brand span{ font-size:12px; color:var(--muted); }
+  .topbar .spacer{ flex:1; }
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12px; font-weight:500; padding:5px 11px 5px 9px;
+    border-radius:999px; border:1px solid var(--warn-line);
+    background:var(--warn-bg); color:var(--warn);
+  }
+  .pill .dot{ width:6px; height:6px; border-radius:50%; background:var(--warn); }
+  .pill.ok{ border-color:var(--line); background:var(--surface-2); color:var(--ink-soft); }
+  .pill.ok .dot{ background:var(--accent); }
+  .who{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft);
+  }
+  .avatar{
+    width:26px; height:26px; border-radius:50%; background:var(--accent);
+    color:var(--accent-ink); display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:600; font-family:'IBM Plex Mono', monospace;
+  }
+
+  /* ---------- Sidebar: knowledge base ---------- */
+  .sidebar{
+    border-right:1px solid var(--line);
+    background:var(--surface);
+    padding:18px 14px 24px;
+    overflow-y:auto;
+  }
+  .sidebar-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding:2px 6px 12px;
+  }
+  .sidebar-head h2{ font-size:13px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-family:'IBM Plex Sans'; }
+  .sidebar-head .count{ font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  .kb-list{ display:flex; flex-direction:column; gap:6px; }
+  .kb-card{
+    display:flex; flex-direction:column; gap:6px;
+    padding:11px 12px; border-radius:10px;
+    border:1px solid transparent;
+    cursor:default;
+  }
+  .kb-card.active{ background:var(--surface-2); border-color:var(--line); }
+  .kb-row1{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .kb-name{ font-size:13.5px; font-weight:600; text-transform:capitalize; }
+  .kb-status{ font-size:10.5px; font-weight:500; padding:2px 7px; border-radius:999px; letter-spacing:.02em; }
+  .kb-status.confirmed{ background:var(--accent-ink); color:var(--accent-strong); }
+  .kb-status.draft{ background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-line); }
+  .kb-meta{ display:flex; gap:12px; font-size:11.5px; color:var(--muted); }
+  .kb-meta b{ font-variant-numeric:tabular-nums; color:var(--ink-soft); font-weight:500; }
+
+  .sidebar-note{
+    margin-top:16px; padding:12px 12px; border-radius:10px;
+    background:var(--surface-2); border:1px solid var(--line-soft);
+    font-size:12px; color:var(--muted); line-height:1.55;
+  }
+
+  /* ---------- Main ---------- */
+  .main{ padding:22px 28px 40px; max-width:900px; }
+  .main-head{ margin-bottom:18px; }
+  .main-head h2{ font-size:22px; font-weight:600; }
+  .main-head p{ margin:6px 0 0; color:var(--muted); font-size:13px; max-width:62ch; }
+
+  /* conversation */
+  .thread{ display:flex; flex-direction:column; gap:14px; margin-bottom:22px; }
+  .turn{ display:flex; gap:12px; }
+  .turn .who-tag{
+    flex:0 0 auto; width:64px; padding-top:2px;
+    font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;
+  }
+  .turn.system .who-tag{ color:var(--accent-strong); }
+  .turn .bubble{
+    flex:1; background:var(--surface); border:1px solid var(--line);
+    border-radius:10px; padding:12px 14px; font-size:13.5px;
+  }
+  .turn.doctor .bubble{ background:var(--surface-2); }
+  .turn.system .bubble{ border-color:var(--line); }
+  .bubble p{ margin:0; }
+  .bubble p + p{ margin-top:8px; }
+
+  /* draft rule card */
+  .draft{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .draft-head{
+    display:flex; align-items:center; gap:10px;
+    padding:14px 18px; border-bottom:1px solid var(--line-soft);
+  }
+  .draft-head h3{ font-size:15px; font-weight:600; }
+  .draft-head .tag{
+    font-size:10.5px; font-weight:600; letter-spacing:.03em;
+    padding:3px 8px; border-radius:6px;
+    background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn-line);
+  }
+  .draft-head .tag.confirmed{ background:var(--accent-ink); color:var(--accent-strong); border-color:transparent; }
+  .draft-head .spacer{ flex:1; }
+  .draft-head .src{ font-size:11.5px; color:var(--muted); }
+
+  .draft-body{ padding:16px 18px 6px; display:flex; flex-direction:column; gap:16px; }
+
+  .field-row{ display:grid; grid-template-columns: 150px 1fr; gap:14px; align-items:start; }
+  .field-label{ font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding-top:8px; }
+  .field-input{
+    font-family:'IBM Plex Mono', monospace; font-size:13px;
+    padding:8px 10px; border:1px solid var(--line); border-radius:8px;
+    background:var(--surface-2); color:var(--ink); width:100%;
+  }
+  .field-input:focus{ outline:2px solid var(--focus); outline-offset:1px; background:var(--surface); }
+
+  .threshold-row{ display:flex; align-items:center; gap:10px; }
+  .stepper{ display:flex; align-items:center; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .stepper button{
+    border:none; background:var(--surface-2); color:var(--ink); width:28px; height:30px;
+    font-size:15px; cursor:pointer; font-family:inherit;
+  }
+  .stepper button:hover{ background:var(--line-soft); }
+  .stepper output{
+    min-width:36px; text-align:center; font-family:'IBM Plex Mono', monospace; font-size:13.5px; font-weight:500;
+  }
+  .threshold-note{ font-size:12px; color:var(--muted); }
+
+  .facts{ display:flex; flex-direction:column; gap:8px; }
+  .fact-row{
+    display:grid; grid-template-columns: 1fr 200px 30px; gap:8px; align-items:center;
+  }
+  .fact-row .field-input.code{ font-size:12px; color:var(--accent-strong); }
+  .fact-del{
+    border:none; background:transparent; color:var(--muted); cursor:pointer;
+    width:28px; height:28px; border-radius:6px; font-size:15px;
+  }
+  .fact-del:hover{ background:var(--warn-bg); color:var(--warn); }
+  .add-fact{
+    align-self:flex-start; margin-top:2px;
+    border:1px dashed var(--line); background:transparent; color:var(--muted);
+    font-size:12px; padding:7px 12px; border-radius:8px; cursor:pointer; font-family:inherit;
+  }
+  .add-fact:hover{ border-color:var(--accent); color:var(--accent-strong); }
+
+  .routing-note{
+    display:flex; gap:8px; align-items:flex-start;
+    background:var(--surface-2); border:1px solid var(--line-soft); border-radius:8px;
+    padding:10px 12px; font-size:12.5px; color:var(--ink-soft);
+  }
+  .routing-note .ic{ color:var(--muted); font-family:'IBM Plex Mono'; font-size:12px; padding-top:1px; }
+
+  .draft-actions{
+    display:flex; align-items:center; gap:10px;
+    padding:14px 18px; border-top:1px solid var(--line-soft);
+  }
+  .btn{
+    font-family:'IBM Plex Sans'; font-size:13px; font-weight:600;
+    padding:9px 16px; border-radius:8px; cursor:pointer; border:1px solid transparent;
+  }
+  .btn-primary{ background:var(--accent); color:var(--accent-ink); }
+  .btn-primary:hover{ background:var(--accent-strong); }
+  .btn-primary:disabled{ background:var(--line); color:var(--muted); cursor:default; }
+  .btn-ghost{ background:transparent; color:var(--muted); border-color:var(--line); }
+  .btn-ghost:hover{ border-color:var(--warn); color:var(--warn); }
+  .draft-actions .hint{ margin-left:auto; font-size:11.5px; color:var(--muted); }
+
+  .provenance{
+    display:none; align-items:center; gap:8px;
+    margin-top:14px; padding:10px 14px; border-radius:8px;
+    background:var(--accent-ink); color:var(--accent-strong); font-size:12.5px;
+  }
+  .provenance.show{ display:flex; }
+  .provenance b{ font-weight:600; }
+
+  footer.legend{
+    margin-top:28px; padding-top:16px; border-top:1px solid var(--line-soft);
+    font-size:11.5px; color:var(--muted); max-width:62ch; line-height:1.6;
+  }
+
+  [hidden]{ display:none !important; }
+</style>
+
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <h1>Rule Intake</h1>
+      <span>knowledge acquisition for the screening engine</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="pill" id="statusPill"><span class="dot"></span>1 draft awaiting confirmation</div>
+    <div class="who">
+      <div class="avatar">SK</div>
+      Dr. S. Kapoor
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <h2>Knowledge Base</h2>
+      <span class="count">7 conditions</span>
+    </div>
+    <div class="kb-list" id="kbList">
+      <div class="kb-card">
+        <div class="kb-row1"><span class="kb-name">Diabetes</span><span class="kb-status confirmed">confirmed</span></div>
+        <div class="kb-meta">threshold <b>3</b>&nbsp;·&nbsp;facts <b>5</b></div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-row1"><span class="kb-name">Hypertension</span><span class="kb-status confirmed">confirmed</span></div>
+        <div class="kb-meta">threshold <b>2</b>&nbsp;·&nbsp;facts <b>4</b></div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-row1"><span class="kb-name">Anemia</span><span class="kb-status confirmed">confirmed</span></div>
+        <div class="kb-meta">threshold <b>2</b>&nbsp;·&nbsp;facts <b>3</b></div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-row1"><span class="kb-name">UTI</span><span class="kb-status confirmed">confirmed</span></div>
+        <div class="kb-meta">threshold <b>2</b>&nbsp;·&nbsp;facts <b>4</b></div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-row1"><span class="kb-name">Asthma</span><span class="kb-status confirmed">confirmed</span></div>
+        <div class="kb-meta">threshold <b>2</b>&nbsp;·&nbsp;facts <b>4</b></div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-row1"><span class="kb-name">Tuberculosis</span><span class="kb-status confirmed">confirmed</span></div>
+        <div class="kb-meta">threshold <b>2</b>&nbsp;·&nbsp;facts <b>5</b></div>
+      </div>
+      <div class="kb-card active" id="kbMigraine">
+        <div class="kb-row1"><span class="kb-name">Migraine</span><span class="kb-status draft" id="kbMigraineStatus">draft</span></div>
+        <div class="kb-meta">threshold <b id="kbThreshold">3</b>&nbsp;·&nbsp;facts <b id="kbFactCount">4</b></div>
+      </div>
+    </div>
+    <div class="sidebar-note">
+      A rule only reaches this list once a doctor confirms it below. Nothing a doctor describes is added to the live screening engine automatically.
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-head">
+      <h2>Add condition — Migraine</h2>
+      <p>Describe what you'd confirm a diagnosis from, in your own words. Rule Intake proposes a draft rule in the same fact/threshold format the screening engine already uses; nothing is added until you review and confirm it.</p>
+    </div>
+
+    <div class="thread">
+      <div class="turn doctor">
+        <div class="who-tag">You</div>
+        <div class="bubble">
+          <p>I'd like to add migraine. Patients usually have a moderate to severe headache, often throbbing and on one side. It's often with nausea, and light or sound bothering them during an episode. I'd say if they have at least three of those, that's enough to flag it for follow-up.</p>
+        </div>
+      </div>
+      <div class="turn system">
+        <div class="who-tag">Rule Intake</div>
+        <div class="bubble">
+          <p>I read four candidate symptoms and a confirmation count of three. I also noticed <span class="mono">headache</span> is already a recognized opening symptom routed to Hypertension and Anemia — I've added Migraine to that routing so a patient mentioning headache is asked about it too. Review the draft below before it joins the knowledge base.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="draft">
+      <div class="draft-head">
+        <span class="tag" id="draftTag">draft — unconfirmed</span>
+        <h3>New condition: Migraine</h3>
+        <div class="spacer"></div>
+        <span class="src">parsed from conversation above</span>
+      </div>
+
+      <div class="draft-body">
+        <div class="field-row">
+          <div class="field-label">Threshold</div>
+          <div class="threshold-row">
+            <div class="stepper">
+              <button type="button" id="thMinus" aria-label="Decrease threshold">–</button>
+              <output id="thValue">3</output>
+              <button type="button" id="thPlus" aria-label="Increase threshold">+</button>
+            </div>
+            <span class="threshold-note">of 4 facts below confirm Migraine</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">Confirming facts</div>
+          <div class="facts" id="factsList">
+            <div class="fact-row">
+              <input class="field-input" value="Do you get a throbbing headache, often on one side?">
+              <input class="field-input code" value="throbbing_unilateral_headache">
+              <button class="fact-del" title="Remove fact" data-remove>&times;</button>
+            </div>
+            <div class="fact-row">
+              <input class="field-input" value="Do you feel nauseous during these headache episodes?">
+              <input class="field-input code" value="migraine_nausea">
+              <button class="fact-del" title="Remove fact" data-remove>&times;</button>
+            </div>
+            <div class="fact-row">
+              <input class="field-input" value="Does light bother you during these episodes?">
+              <input class="field-input code" value="photophobia">
+              <button class="fact-del" title="Remove fact" data-remove>&times;</button>
+            </div>
+            <div class="fact-row">
+              <input class="field-input" value="Does sound bother you during these episodes?">
+              <input class="field-input code" value="phonophobia">
+              <button class="fact-del" title="Remove fact" data-remove>&times;</button>
+            </div>
+          </div>
+          <button class="add-fact" id="addFact" type="button">+ add a confirming fact</button>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">Routing</div>
+          <div class="routing-note">
+            <span class="ic">→</span>
+            <span>Opening symptom <b class="mono">headache</b> now routes to: Hypertension, Anemia, <b>Migraine</b>. Patients describing a headache will be asked about all three before any is ruled out.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="draft-actions">
+        <button class="btn btn-primary" id="confirmBtn">Add to Knowledge Base</button>
+        <button class="btn btn-ghost" id="discardBtn">Discard draft</button>
+        <span class="hint">Nothing here is live until confirmed.</span>
+      </div>
+    </div>
+
+    <div class="provenance" id="provenance">
+      <span class="mono">✓</span>
+      <span><b>Migraine</b> added to the live knowledge base — confirmed by Dr. S. Kapoor, just now. The screening engine will route and question on it starting with the next conversation.</span>
+    </div>
+
+    <footer class="legend">
+      Rule Intake only ever proposes a candidate rule from what a doctor describes — the production rule that actually governs a screening result is the one written here, in the same fact/threshold form the reasoning engine already uses, and it takes effect only after a person confirms it. This preserves the same separation the patient-facing interface uses for its optional language-model layer: conversational input proposes, it never decides.
+    </footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  var thValue = document.getElementById('thValue');
+  var thMinus = document.getElementById('thMinus');
+  var thPlus = document.getElementById('thPlus');
+  var factsList = document.getElementById('factsList');
+  var kbThreshold = document.getElementById('kbThreshold');
+  var kbFactCount = document.getElementById('kbFactCount');
+  var addFactBtn = document.getElementById('addFact');
+  var confirmBtn = document.getElementById('confirmBtn');
+  var discardBtn = document.getElementById('discardBtn');
+  var provenance = document.getElementById('provenance');
+  var draftTag = document.getElementById('draftTag');
+  var kbStatus = document.getElementById('kbMigraineStatus');
+  var statusPill = document.getElementById('statusPill');
+
+  function factCount(){ return factsList.querySelectorAll('.fact-row').length; }
+  function syncCounts(){ kbFactCount.textContent = factCount(); }
+
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+
+  thMinus.addEventListener('click', function(){
+    var v = clamp(parseInt(thValue.textContent, 10) - 1, 1, factCount());
+    thValue.textContent = v;
+    kbThreshold.textContent = v;
+  });
+  thPlus.addEventListener('click', function(){
+    var v = clamp(parseInt(thValue.textContent, 10) + 1, 1, factCount());
+    thValue.textContent = v;
+    kbThreshold.textContent = v;
+  });
+
+  factsList.addEventListener('click', function(e){
+    if(e.target.matches('[data-remove]')){
+      var rows = factsList.querySelectorAll('.fact-row');
+      if(rows.length <= 1) return;
+      e.target.closest('.fact-row').remove();
+      syncCounts();
+      var maxTh = factCount();
+      if(parseInt(thValue.textContent,10) > maxTh){
+        thValue.textContent = maxTh;
+        kbThreshold.textContent = maxTh;
+      }
+    }
+  });
+
+  addFactBtn.addEventListener('click', function(){
+    var row = document.createElement('div');
+    row.className = 'fact-row';
+    row.innerHTML =
+      '<input class="field-input" placeholder="Question to ask the patient">' +
+      '<input class="field-input code" placeholder="fact_code">' +
+      '<button class="fact-del" title="Remove fact" data-remove>&times;</button>';
+    factsList.appendChild(row);
+    syncCounts();
+    row.querySelector('input').focus();
+  });
+
+  confirmBtn.addEventListener('click', function(){
+    if(confirmBtn.disabled) return;
+    draftTag.textContent = 'confirmed';
+    draftTag.classList.add('confirmed');
+    kbStatus.textContent = 'confirmed';
+    kbStatus.classList.remove('draft');
+    kbStatus.classList.add('confirmed');
+    provenance.classList.add('show');
+    confirmBtn.disabled = true;
+    discardBtn.disabled = true;
+    statusPill.classList.add('ok');
+    statusPill.innerHTML = '<span class="dot"></span>All rules confirmed';
+  });
+
+  discardBtn.addEventListener('click', function(){
+    if(confirmBtn.disabled) return;
+    var card = document.querySelector('.draft');
+    card.style.opacity = '.35';
+    discardBtn.disabled = true;
+    confirmBtn.disabled = true;
+    discardBtn.textContent = 'Discarded';
+  });
+})();
+</script>

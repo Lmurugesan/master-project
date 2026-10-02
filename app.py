@@ -19,20 +19,53 @@ import re
 import yaml
 from flask import Flask, request, jsonify, send_from_directory
 
+from llm_extract import llm_extract_symptoms, llm_clarify, PROVIDER as LLM_PROVIDER
+import doctor_intake
+
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
 
 BASE = os.path.dirname(os.path.abspath(__file__))
+YAML_PATH = os.path.join(BASE, 'diseases.yaml')
 
 import generate_prolog
 generate_prolog.generate()
 
-with open(os.path.join(BASE, 'diseases.yaml')) as f:
-    CONFIG = yaml.safe_load(f)
+CONFIG = ALL_DISEASES = SYMPTOM_ROUTING = SEVERITY = CATEGORY = None
 
-ALL_DISEASES   = list(CONFIG['diseases'].keys())
-SYMPTOM_ROUTING = CONFIG['symptom_routing']
+
+def reload_config():
+    """
+    (Re)load diseases.yaml into the module-level globals every route reads
+    from. Called at startup, and again right after a doctor confirms a new
+    rule into the knowledge base — so a freshly-added disease is live
+    immediately, with no server restart needed.
+    """
+    global CONFIG, ALL_DISEASES, SYMPTOM_ROUTING, SEVERITY, CATEGORY
+    with open(YAML_PATH) as f:
+        CONFIG = yaml.safe_load(f)
+
+    ALL_DISEASES   = list(CONFIG['diseases'].keys())
+    SYMPTOM_ROUTING = CONFIG['symptom_routing']
+
+    # Per-fact clinical severity (1-5). Used only to rank and label reasons
+    # when explaining a result — the confirmation threshold itself stays a
+    # plain fact count (or a primary-symptom short-circuit), decided
+    # entirely in Prolog.
+    SEVERITY = {}
+    for _ddata in CONFIG['diseases'].values():
+        for _q in _ddata['questions']:
+            SEVERITY[_q['fact']] = _q.get('severity', 3)
+
+    # Broad category each disease belongs to — drives the first stage of
+    # the reasoning chain (category, then specific disease within it), not
+    # just a flat list of unrelated diseases. See diseases.yaml's
+    # 'categories' block.
+    CATEGORY = CONFIG.get('categories', {})
+
+
+reload_config()
 
 app = Flask(__name__, static_folder='static')
 
@@ -70,7 +103,11 @@ YES_WORDS = ['yes', 'yeah', 'yep', 'yup', 'correct', 'right', 'sure', 'absolutel
              'definitely', 'i do', 'i have', 'that is right', "that's right", 'indeed',
              'true', 'exactly', 'positive', 'affirmative', 'of course']
 
-# Partial answers that lean yes — medically safer to count these as confirmed
+# Hedged answers — hint at "yes" but are not an unconditional one. Classified
+# as 'unsure' (see detect_yes_no), never silently upgraded to a full "yes":
+# "sometimes" thirsty is not the same claim as "thirsty most of the time",
+# and "sometimes" isn't even a coherent answer to a yes/no history question
+# like "have you ever been told you have high blood pressure?".
 PARTIAL_YES = ['sometimes', 'a bit', 'little', 'kind of', 'sort of', 'slightly',
                'occasionally', 'at times', 'now and then', 'mild', 'mildly',
                'somewhat', 'i think so', 'maybe yes', 'probably']
@@ -97,12 +134,31 @@ def extract_symptoms(text):
     return found
 
 
+def extract_symptoms_smart(text):
+    """
+    Prefer LLM-based extraction (paraphrase-robust, see llm_extract.py) when
+    LLM_PROVIDER is configured; fall back to the keyword lexicon whenever the
+    LLM is disabled, unreachable, or returns nothing usable. The fallback
+    means the app always runs, with or without an API key configured.
+    """
+    if LLM_PROVIDER != 'none':
+        result = llm_extract_symptoms(text)
+        if result is not None:
+            return result
+    return extract_symptoms(text)
+
+
 def detect_yes_no(text):
     """
     Return 'yes', 'no', 'unsure', or 'unrecognized'.
     Priority: unsure-patterns first, then partial-yes, then yes/no keywords.
     'no test taken yet' → unsure (not no)
-    'sometimes' / 'a little' → yes (lean towards confirming for safety)
+    'sometimes' / 'a little' → unsure, NOT yes. A hedge like "sometimes" is
+    not the same claim as the question it answers ("...most of the time?",
+    "have you ever been told...?", "are you currently on...?") and should
+    never silently count as full confirmation — doing so overstates what
+    the patient actually said and can produce a screening result built on
+    answers the patient never gave.
     Anything that doesn't match any known pattern → 'unrecognized', so the
     caller can re-ask instead of silently treating gibberish as an answer.
     """
@@ -112,9 +168,9 @@ def detect_yes_no(text):
     if any(p in tl for p in UNSURE_PATTERNS):
         return 'unsure'
 
-    # Partial yes → count as yes
+    # Hedged / partial answers → unsure, never an unconditional yes
     if any(w in tl for w in PARTIAL_YES):
-        return 'yes'
+        return 'unsure'
 
     if any(w in tl for w in YES_WORDS):
         return 'yes'
@@ -188,8 +244,18 @@ def run_prolog(facts, asked, disease_order):
 
     if tag == 'DIAGNOSED' and len(parts) >= 5:
         matched = [m for m in parts[2].split(',') if m]
+        # Rank matched facts by clinical severity (most important first) —
+        # this drives both the reasons list below and the "why" panel.
+        matched_ranked = sorted(matched, key=lambda f: -SEVERITY.get(f, 3))
+        # 'primary' = one hallmark symptom alone was enough to confirm;
+        # 'threshold' = the plain fact-count reached the disease's
+        # threshold instead. Defaults to 'threshold' for older Prolog
+        # output that doesn't carry the field.
+        reason = parts[5] if len(parts) >= 6 else 'threshold'
         return {'type': 'diagnosed', 'disease': parts[1],
-                'matched': matched, 'count': int(parts[3]), 'threshold': int(parts[4])}
+                'matched': matched_ranked, 'count': int(parts[3]), 'threshold': int(parts[4]),
+                'severities': {f: SEVERITY.get(f, 3) for f in matched},
+                'reason': reason}
     if tag == 'NEED_ANSWER' and len(parts) >= 3:
         return {'type': 'need_answer', 'question': parts[1], 'fact': parts[2]}
     if tag == 'NO_DIAGNOSIS':
@@ -208,6 +274,19 @@ WELCOME = (
     "Can you tell me what has been bothering you the most lately? "
     "Feel free to describe your symptoms in your own words."
 )
+
+# Stage-one message: announced once, the first time investigation enters a
+# given category, before any disease-specific question in it. This is what
+# makes the chain visible as "category, then disease" rather than a flat
+# list — e.g. a cough is first framed as a respiratory-system question,
+# and only then narrowed to asthma vs. tuberculosis specifically.
+CATEGORY_INTRO = {
+    'metabolic':      "Based on what you've described, let's start by looking into possible metabolic causes.",
+    'cardiovascular': "Let's start by looking into your cardiovascular system.",
+    'hematologic':    "Let's start by checking for signs related to your blood count.",
+    'urinary':        "Let's start by looking into your urinary system.",
+    'respiratory':    "Let's start by looking into your respiratory system.",
+}
 
 DISEASE_INTRO = {
     'diabetes':     "I see. Let me ask you a few questions about your blood sugar levels and some related symptoms.",
@@ -281,6 +360,12 @@ def doctor_response_for(prolog_result, session):
                 if dname != last_intro:
                     if last_ruled:
                         parts.append(RULED_OUT.get(last_ruled, ''))
+                    # Stage one: announce the category only the first time
+                    # we enter it, before stage two's disease-specific intro.
+                    category = CATEGORY.get(dname)
+                    if category and category != session.get('last_category'):
+                        parts.append(CATEGORY_INTRO.get(category, ''))
+                        session['last_category'] = category
                     parts.append(DISEASE_INTRO.get(dname, ''))
                     session['last_intro']  = dname
                     session['last_ruled']  = None
@@ -293,13 +378,38 @@ def doctor_response_for(prolog_result, session):
         disease  = prolog_result['disease']
         matched  = prolog_result['matched']
 
-        # Show the three most clinically specific confirmed reasons for this diagnosis.
-        reasons = [FACT_REASON.get(f, f"You confirmed: {f.replace('_', ' ')}.") for f in matched][:3]
-        reasons_block = '\n'.join(f"{i+1}. {r}" for i, r in enumerate(reasons))
+        # Show the reasons behind this screening result — never call it a
+        # "diagnosis" or say a disease was "confirmed": this is a screening
+        # tool, not a diagnostic one. `matched` already arrives ranked most
+        # clinically significant first (see run_prolog); show the top few,
+        # each labeled with its severity so the ranking is visible, not
+        # just implied by order.
+        severities = prolog_result.get('severities', {})
+        reasons = [
+            (FACT_REASON.get(f, f"You reported: {f.replace('_', ' ')}."), severities.get(f, 3))
+            for f in matched
+        ][:4]
+        reasons_block = '\n'.join(
+            f"{i+1}. {r} *(severity {sev}/5)*" for i, (r, sev) in enumerate(reasons)
+        )
+
+        # A 'primary' result means one hallmark symptom was decisive on its
+        # own — say so plainly, rather than implying a tally of facts was
+        # what tipped it, which is what 'threshold' results actually are.
+        if prolog_result.get('reason') == 'primary':
+            lead = (
+                f"Thank you for answering that.\n\n"
+                f"One of your answers is a key finding on its own — that's "
+                f"enough by itself to point to **{disease.upper()}**:"
+            )
+        else:
+            lead = (
+                f"Thank you for your patience with all those questions.\n\n"
+                f"This screening points to **{disease.upper()}**. Here are the reasons:"
+            )
 
         return (
-            f"Thank you for your patience with all those questions.\n\n"
-            f"This confirms **{disease.upper()}**. Here are the reasons:\n\n"
+            f"{lead}\n\n"
             f"{reasons_block}\n\n"
             f"⚠️ This result is based only on the symptoms you reported in this chat. "
             f"Please follow up with a specialist and run proper lab tests to confirm it clinically."
@@ -336,6 +446,7 @@ def start():
         'order_set':    False,
         'last_intro':   None,
         'last_ruled':   None,
+        'last_category': None,
         'done':         False,
     }
     return jsonify({'message': WELCOME, 'session': session})
@@ -358,12 +469,25 @@ def chat():
         answer = detect_yes_no(user_message)
 
         if answer == 'unrecognized':
-            # Don't record anything or advance — ask again for a clear answer.
-            return jsonify({
-                'message': (
+            # Don't record anything or advance. If the patient appears to be
+            # asking a genuine clarifying question (e.g. "what is HbA1c"),
+            # try answering it via the configured LLM before falling back to
+            # the generic re-prompt — this never bypasses the pending
+            # question, it only optionally explains it first.
+            clarification = None
+            if LLM_PROVIDER != 'none':
+                clarification = llm_clarify(user_message, pending_question)
+
+            if clarification:
+                reply = f"{clarification}\n\n{pending_question or ''}".strip()
+            else:
+                reply = (
                     "Sorry, I didn't quite catch that. Could you answer with "
                     "a simple yes or no?\n\n" + (pending_question or '')
-                ).strip(),
+                ).strip()
+
+            return jsonify({
+                'message': reply,
                 'session': session,
                 'debug': {'facts': facts, 'asked': asked}
             })
@@ -376,11 +500,28 @@ def chat():
         session['pending_question'] = None
 
     # --- Also extract any freely mentioned symptoms ---
-    for sym in extract_symptoms(user_message):
+    for sym in extract_symptoms_smart(user_message):
         if sym not in facts:
             facts.append(sym)
         if sym not in asked:
             asked.append(sym)
+
+    # --- Safe abstention: nothing has been recognized and no question has
+    # been asked yet. Do NOT silently default to checking every disease
+    # starting with whichever happens to be first in the catalog (that
+    # produces a confident but unsupported result — see the paper's
+    # evaluation of this exact failure mode). Ask for a clearer symptom
+    # description instead, and keep asking until one is recognized. ---
+    if not facts and not asked:
+        return jsonify({
+            'message': (
+                "I want to make sure I ask about the right thing — could you "
+                "describe the main symptom that's bothering you? For example: "
+                "fatigue, headache, cough, or frequent urination."
+            ),
+            'session': session,
+            'debug': {'facts': facts, 'asked': asked}
+        })
 
     # --- Set disease order once we know the first symptom ---
     if not session['order_set'] and facts:
@@ -418,7 +559,63 @@ def chat():
 
 
 # ---------------------------------------------------------------------------
+# Doctor-side knowledge acquisition ("Rule Intake") — the real backend
+# behind the interface, previously a prototype only. See doctor_intake.py.
+# ---------------------------------------------------------------------------
+
+@app.route('/doctor')
+def doctor_page():
+    return send_from_directory('static', 'doctor.html')
+
+
+@app.route('/doctor/start', methods=['POST'])
+def doctor_start():
+    session = doctor_intake.new_session()
+    return jsonify({'message': doctor_intake.start_message(), 'session': session})
+
+
+@app.route('/doctor/chat', methods=['POST'])
+def doctor_chat():
+    body = request.json
+    user_message = body['message']
+    session = body['session']
+
+    reply, session, draft = doctor_intake.step(session, user_message)
+    return jsonify({'message': reply, 'session': session, 'draft': draft})
+
+
+@app.route('/doctor/confirm', methods=['POST'])
+def doctor_confirm():
+    body = request.json
+    draft = body['draft']
+    try:
+        doctor_intake.commit_draft(draft, YAML_PATH)
+    except ValueError as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'ok': False, 'error': f'Could not save: {e}'}), 500
+
+    # Make the new disease live immediately, no restart needed.
+    reload_config()
+
+    return jsonify({
+        'ok': True,
+        'message': f"Added to the knowledge base — \"{draft['name']}\" is now "
+                    f"part of live screening, effective immediately.",
+        'diseases': ALL_DISEASES,
+    })
+
+
+@app.route('/doctor/discard', methods=['POST'])
+def doctor_discard():
+    # Nothing was ever written — discarding just means the client throws
+    # the draft away and starts a new /doctor/start session.
+    return jsonify({'ok': True})
+
+
+# ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
     print('\nStarting Medical Diagnosis Chat at http://localhost:8080\n')
+    print('Doctor knowledge-acquisition interface: http://localhost:8080/doctor\n')
     app.run(debug=False, port=8080)

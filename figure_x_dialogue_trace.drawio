@@ -1,0 +1,101 @@
+<mxfile host="app.diagrams.net" agent="claude">
+  <diagram name="Fig X - Annotated Dialogue" id="figx">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="850" pageHeight="620" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="hdrL" parent="1" style="text;html=1;align=left;fillColor=none;strokeColor=none;fontStyle=1;fontSize=11;" value="Conversation" vertex="1">
+          <mxGeometry x="40" y="16" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="hdrR" parent="1" style="text;html=1;align=left;fillColor=none;strokeColor=none;fontStyle=1;fontSize=11;" value="Internal state after the turn" vertex="1">
+          <mxGeometry x="430" y="16" width="280" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Turn 1: Patient opening -->
+        <mxCell id="t1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="&lt;b&gt;Patient:&lt;/b&gt; &quot;My blood sugar has been running high and I&#39;ve been going to the bathroom constantly.&quot;" vertex="1">
+          <mxGeometry x="40" y="44" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;align=left;spacingLeft=8;fontSize=9;" value="recognized: elevated_glucose, polyuria&#xa;routed candidate set: { diabetes, hypertension }&#xa;diabetes confirmed count: 2 / 3" vertex="1">
+          <mxGeometry x="430" y="44" width="330" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Turn 2: System question -->
+        <mxCell id="t2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="&lt;b&gt;System:&lt;/b&gt; &quot;Have you had a blood test showing a high HbA1c level?&quot;" vertex="1">
+          <mxGeometry x="40" y="120" width="340" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;align=left;spacingLeft=8;fontSize=9;" value="asking diabetes question -&gt; fact: high_hba1c" vertex="1">
+          <mxGeometry x="430" y="120" width="330" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- Turn 3: Patient answer (uncertain) -->
+        <mxCell id="t3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="&lt;b&gt;Patient:&lt;/b&gt; &quot;I haven&#39;t had that test done.&quot;" vertex="1">
+          <mxGeometry x="40" y="180" width="340" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;align=left;spacingLeft=8;fontSize=9;" value="answer classified: UNCERTAIN&#xa;high_hba1c not confirmed -- count unchanged: 2 / 3" vertex="1">
+          <mxGeometry x="430" y="180" width="330" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Turn 4: System question -->
+        <mxCell id="t4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="&lt;b&gt;System:&lt;/b&gt; &quot;Are you feeling unusually thirsty most of the time?&quot;" vertex="1">
+          <mxGeometry x="40" y="236" width="340" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;align=left;spacingLeft=8;fontSize=9;" value="asking diabetes question -&gt; fact: polydipsia" vertex="1">
+          <mxGeometry x="430" y="236" width="330" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- Turn 5: Patient answer (affirmative) -->
+        <mxCell id="t5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="&lt;b&gt;Patient:&lt;/b&gt; &quot;Yes, constantly -- I can&#39;t seem to drink enough water.&quot;" vertex="1">
+          <mxGeometry x="40" y="296" width="340" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="a5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;align=left;spacingLeft=8;fontSize=9;" value="answer classified: AFFIRMATIVE&#xa;polydipsia confirmed -- count: 3 / 3 (threshold reached)" vertex="1">
+          <mxGeometry x="430" y="296" width="330" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- Turn 6: System result -->
+        <mxCell id="t6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;align=left;spacingLeft=8;fontSize=10;" value="&lt;b&gt;System:&lt;/b&gt; &quot;This confirms DIABETES. The confirmed indicators are: reported high blood glucose; urinating far more than usual; and persistent excessive thirst.&quot;" vertex="1">
+          <mxGeometry x="40" y="356" width="340" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="a6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;dashed=1;align=left;spacingLeft=8;fontSize=9;" value="threshold reached (3 &#8805; 3) -&gt; DIABETES confirmed&#xa;trace T returned: facts { elevated_glucose, polyuria, polydipsia };&#xa;hypertension never evaluated" vertex="1">
+          <mxGeometry x="430" y="356" width="330" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- vertical flow arrows -->
+        <mxCell id="e1" edge="1" parent="1" source="t1" target="t2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#000000;endArrow=block;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="t2" target="t3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#000000;endArrow=block;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="t3" target="t4" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#000000;endArrow=block;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="t4" target="t5" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#000000;endArrow=block;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="t5" target="t6" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#000000;endArrow=block;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- thin connectors turn -> annotation -->
+        <mxCell id="c1" edge="1" parent="1" source="t1" target="a1" style="html=1;strokeColor=#000000;dashed=1;endArrow=none;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" edge="1" parent="1" source="t3" target="a3" style="html=1;strokeColor=#000000;dashed=1;endArrow=none;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" edge="1" parent="1" source="t5" target="a5" style="html=1;strokeColor=#000000;dashed=1;endArrow=none;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" edge="1" parent="1" source="t6" target="a6" style="html=1;strokeColor=#000000;dashed=1;endArrow=none;" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cap" parent="1" style="text;html=1;align=center;fillColor=none;strokeColor=none;fontSize=10;" value="Fig. X. Annotated screening dialogue (Case Study VI-A), showing the internal state after each turn." vertex="1">
+          <mxGeometry x="60" y="446" width="700" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

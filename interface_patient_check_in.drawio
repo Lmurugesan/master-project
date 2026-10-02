@@ -1,0 +1,71 @@
+<mxfile host="app.diagrams.net" agent="claude">
+  <diagram name="Check-In Wireframe" id="checkin-wf">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="420" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" /><mxCell id="1" parent="0" />
+
+        <mxCell id="frame" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" value="" vertex="1">
+          <mxGeometry x="20" y="20" width="380" height="700" as="geometry" />
+        </mxCell>
+
+        <mxCell id="header" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=10;fontSize=12;fontStyle=1;" value="+ &#160;&#160;Check-In&#10;&#160;&#160;&#160;&#160;&#160;&#160;Symptom screening &#183; rule-based reasoning" vertex="1">
+          <mxGeometry x="20" y="20" width="290" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="restartBtn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=10;" value="&#8635; Restart" vertex="1">
+          <mxGeometry x="315" y="34" width="70" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="trust" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;align=left;spacingLeft=10;fontSize=9;" value="[ Not a diagnosis ]   [ Every result is traceable ]   [ No account needed ]" vertex="1">
+          <mxGeometry x="20" y="66" width="380" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- chat turns -->
+        <mxCell id="t1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="Hello -- what's been bothering you the most lately?" vertex="1">
+          <mxGeometry x="30" y="100" width="230" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="My blood sugar has been running high..." vertex="1">
+          <mxGeometry x="170" y="146" width="230" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="t3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="Have you had a blood test showing high HbA1c?" vertex="1">
+          <mxGeometry x="30" y="192" width="230" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=8;fontSize=10;" value="I haven't had that test done." vertex="1">
+          <mxGeometry x="170" y="238" width="230" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- result card -->
+        <mxCell id="cardOuter" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=1.5;verticalAlign=top;" value="" vertex="1">
+          <mxGeometry x="30" y="280" width="350" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="cardHead" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=10;fontSize=11;fontStyle=1;" value="&#10003;  THIS CONFIRMS&#10;&#160;&#160;&#160;Diabetes" vertex="1">
+          <mxGeometry x="30" y="280" width="350" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cardBody" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=10;fontSize=9.5;" value="Three confirmed signs met the threshold: high glucose, frequent urination, excessive thirst." vertex="1">
+          <mxGeometry x="30" y="322" width="350" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="whyBtn" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=10;align=left;spacingLeft=8;" value="See exactly how this was decided                    v" vertex="1">
+          <mxGeometry x="42" y="360" width="326" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="disc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;dashed=1;fontSize=8.5;align=left;spacingLeft=8;" value="This is a screening result, not a lab-confirmed diagnosis. Please follow up with a clinician." vertex="1">
+          <mxGeometry x="42" y="440" width="326" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- composer -->
+        <mxCell id="composer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;align=left;spacingLeft=10;fontSize=9.5;" value="Type your answer..." vertex="1">
+          <mxGeometry x="30" y="640" width="300" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="sendBtn" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" value="&#10148;" vertex="1">
+          <mxGeometry x="340" y="640" width="34" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="foot" parent="1" style="text;html=1;align=center;fillColor=none;strokeColor=none;fontSize=8.5;" value="Check-In is a screening aid, not a substitute for professional medical advice." vertex="1">
+          <mxGeometry x="20" y="685" width="380" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cap" parent="1" style="text;html=1;align=center;fillColor=none;strokeColor=none;fontSize=11;fontStyle=1;" value="Check-In -- patient screening interface (wireframe)" vertex="1">
+          <mxGeometry x="0" y="730" width="420" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

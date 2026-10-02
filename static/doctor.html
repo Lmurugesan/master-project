@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Check-In · Medical Diagnosis Assistant</title>
+<title>Rule Intake · Doctor Knowledge Acquisition</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root{
@@ -56,7 +56,7 @@
 
   .app {
     width: 100%;
-    max-width: 680px;
+    max-width: 720px;
     margin: 0 auto;
     height: 100%;
     display: flex;
@@ -66,7 +66,6 @@
     border-right: 1px solid var(--line);
   }
 
-  /* ---- Header ---- */
   header {
     display: flex;
     align-items: center;
@@ -105,7 +104,6 @@
   }
   .trust .chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 
-  /* ---- Chat area ---- */
   #chat {
     flex: 1;
     overflow-y: auto;
@@ -117,8 +115,8 @@
   }
 
   .row { display: flex; align-items: flex-end; gap: 10px; }
-  .row.doctor  { justify-content: flex-start; }
-  .row.patient { justify-content: flex-end; }
+  .row.doctor-bot { justify-content: flex-start; }
+  .row.doctor-you { justify-content: flex-end; }
 
   .icon {
     width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
@@ -126,10 +124,10 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 13px;
   }
-  .row.patient .icon { display: none; }
+  .row.doctor-you .icon { display: none; }
 
   .bubble {
-    max-width: min(78%, 480px);
+    max-width: min(82%, 520px);
     padding: 11px 15px;
     border-radius: 16px;
     font-size: 14.5px;
@@ -137,20 +135,18 @@
     word-break: break-word;
     white-space: pre-line;
   }
-  .row.doctor .bubble {
+  .row.doctor-bot .bubble {
     background: var(--surface-2);
     color: var(--ink);
     border: 1px solid var(--line-soft);
     border-radius: 4px 16px 16px 16px;
   }
-  .row.patient .bubble {
+  .row.doctor-you .bubble {
     background: var(--accent);
     color: var(--accent-ink);
     border-radius: 16px 16px 4px 16px;
   }
-  .row.doctor .bubble.has-card { max-width: 100%; }
 
-  /* typing indicator */
   .typing-dots {
     display: flex; gap: 5px;
     padding: 13px 16px;
@@ -171,64 +167,68 @@
     30%           { transform: translateY(-5px); }
   }
 
-  /* ---- Result card (diagnosis) ---- */
-  .result-card {
-    margin-top: 8px;
+  /* ---- Draft card ---- */
+  .draft-card {
+    margin-top: 4px;
     background: var(--surface);
-    border: 1px solid var(--line);
+    border: 1.5px solid var(--accent);
     border-radius: 14px;
     box-shadow: var(--shadow);
     overflow: hidden;
+    width: 100%;
   }
-  .result-head {
-    display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+  .draft-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 18px;
     background: var(--accent-ink); border-bottom: 1px solid var(--line-soft);
   }
-  .result-head .ic { font-size: 18px; }
-  .result-head .label { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-strong); }
-  .result-head h2 { font-size: 19px; font-weight: 600; color: var(--accent-strong); }
-  .result-body { padding: 14px 18px 6px; }
+  .draft-head .label { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-strong); }
+  .draft-head h2 { font-size: 18px; font-weight: 600; color: var(--accent-strong); }
+  .draft-body { padding: 14px 18px; }
+  .draft-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+  .draft-row:last-of-type { border-bottom: none; }
+  .draft-row .k { color: var(--muted); }
+  .draft-row .v { font-family: 'IBM Plex Mono'; font-size: 12.5px; text-align: right; }
 
-  .why-toggle {
-    display: flex; align-items: center; gap: 8px; width: 100%;
-    background: transparent; border: 1px solid var(--line); border-radius: 10px;
-    padding: 10px 14px; margin: 4px 0 4px; cursor: pointer;
-    font-family: 'IBM Plex Sans'; font-size: 13px; font-weight: 500; color: var(--ink);
+  .symptom-item {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px;
   }
-  .why-toggle:hover { border-color: var(--accent); }
-  .why-toggle .chev { margin-left: auto; transition: transform .15s ease; color: var(--muted); }
-  .why-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
-
-  .why-panel { display: none; padding: 6px 2px 14px; }
-  .why-panel.open { display: block; }
-  .fact-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
-  .fact-list span {
-    font-family: 'IBM Plex Mono'; font-size: 11px; color: var(--accent-strong);
-    background: var(--accent-ink); padding: 3px 9px; border-radius: 999px;
-    display: inline-flex; align-items: center; gap: 6px;
-  }
-  /* Severity chip inside each fact pill — higher severity reads as more
-     urgent (warm) without needing a separate legend. */
-  .fact-list .sev {
+  .symptom-item:last-child { border-bottom: none; }
+  .symptom-item .q { flex: 1; }
+  .symptom-item .fact { font-family: 'IBM Plex Mono'; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .symptom-item .tags { display: flex; gap: 6px; flex-shrink: 0; }
+  .sevtag {
     font-family: 'IBM Plex Mono'; font-size: 10px; font-weight: 600;
-    padding: 1px 6px; border-radius: 999px; color: var(--ink);
+    padding: 2px 7px; border-radius: 999px; color: var(--ink);
     background: color-mix(in srgb, var(--warn) calc(var(--sev-pct, 60%)), transparent);
   }
-  .fact-list .sev-1, .fact-list .sev-2 { --sev-pct: 25%; }
-  .fact-list .sev-3 { --sev-pct: 45%; }
-  .fact-list .sev-4 { --sev-pct: 65%; }
-  .fact-list .sev-5 { --sev-pct: 85%; }
-  .why-panel .math { font-size: 13px; color: var(--ink-soft); }
-  .why-panel .math b { color: var(--ink); }
-
-  .disclaimer-line {
-    display: flex; gap: 8px; align-items: flex-start;
-    margin: 8px 0 4px; padding: 10px 12px; border-radius: 9px;
-    background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn);
-    font-size: 12px; line-height: 1.5;
+  .sev-1, .sev-2 { --sev-pct: 25%; }
+  .sev-3 { --sev-pct: 45%; }
+  .sev-4 { --sev-pct: 65%; }
+  .sev-5 { --sev-pct: 85%; }
+  .primarytag {
+    font-family: 'IBM Plex Sans'; font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 999px; color: var(--accent-strong);
+    background: var(--accent-ink); border: 1px solid var(--accent);
   }
 
-  /* ---- New chat bar ---- */
+  .draft-actions { display: flex; gap: 10px; padding: 4px 18px 16px; }
+  .btn-confirm, .btn-discard {
+    flex: 1; padding: 10px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 600;
+    cursor: pointer; font-family: inherit; border: none;
+  }
+  .btn-confirm { background: var(--accent); color: var(--accent-ink); }
+  .btn-confirm:hover { background: var(--accent-strong); }
+  .btn-confirm:disabled { background: var(--line); color: var(--muted); cursor: default; }
+  .btn-discard { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+  .btn-discard:hover { border-color: var(--warn); color: var(--warn); }
+
+  .note {
+    margin: 0 18px 16px; padding: 9px 12px; border-radius: 9px;
+    background: var(--surface-2); border: 1px dashed var(--line); color: var(--muted);
+    font-size: 11.5px; line-height: 1.5;
+  }
+
   #new-chat-bar {
     display: none; justify-content: center; padding: 14px 16px;
     background: var(--surface); border-top: 1px solid var(--line); flex-shrink: 0;
@@ -241,7 +241,6 @@
   }
   #new-chat-btn:hover { background: var(--accent-strong); }
 
-  /* ---- Input bar ---- */
   #bar {
     background: var(--surface);
     border-top: 1px solid var(--line);
@@ -292,33 +291,33 @@
 
 <div class="app">
   <header>
-    <div class="mark">＋</div>
+    <div class="mark">⚕</div>
     <div class="title">
-      <h1>Check-In</h1>
-      <p>Symptom screening · rule-based reasoning</p>
+      <h1>Rule Intake</h1>
+      <p>Doctor knowledge-acquisition interface</p>
     </div>
     <div class="spacer"></div>
-    <button id="restart-btn" class="restart" title="Restart conversation">↺ Restart</button>
+    <button id="restart-btn" class="restart" title="Start a new intake">↺ Restart</button>
   </header>
 
   <div class="trust">
-    <span class="chip"><span class="dot"></span>Not a diagnosis</span>
-    <span class="chip"><span class="dot"></span>Every result is traceable</span>
-    <span class="chip"><span class="dot"></span>No account needed</span>
+    <span class="chip"><span class="dot"></span>Nothing added without confirmation</span>
+    <span class="chip"><span class="dot"></span>Goes live immediately once confirmed</span>
+    <span class="chip"><span class="dot"></span>Every draft is reviewable</span>
   </div>
 
   <div id="chat"></div>
 
   <div id="new-chat-bar">
-    <button id="new-chat-btn">&#43; Start New Chat</button>
+    <button id="new-chat-btn">&#43; Add Another Condition</button>
   </div>
   <div id="bar">
     <textarea id="txt" rows="1"
-      placeholder="Describe your symptoms or answer the question…"
+      placeholder="Type your answer…"
       disabled></textarea>
     <button id="btn" disabled title="Send">&#10148;</button>
   </div>
-  <div class="disclaimer">Check-In is a screening aid, not a substitute for professional medical advice.</div>
+  <div class="disclaimer">Draft rules are never added to the live knowledge base until you confirm them below.</div>
 </div>
 
 <script>
@@ -330,15 +329,6 @@ const newChatBtn  = document.getElementById('new-chat-btn');
 const restartBtn  = document.getElementById('restart-btn');
 
 let session = null;
-let whyId = 0;
-
-// Acronym conditions need their own capitalization — "uti" should render
-// as "UTI", not "Uti" (which plain capitalize() would produce).
-const ACRONYM_DISEASES = new Set(['uti']);
-function formatDiseaseName(name) {
-  if (ACRONYM_DISEASES.has(name.toLowerCase())) return name.toUpperCase();
-  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-}
 
 function restartChat() {
   chatEl.innerHTML = '';
@@ -347,132 +337,150 @@ function restartChat() {
   startSession();
 }
 
-/* ---- DOM helpers ---- */
-function addBubble(text, role, extra) {
+function addBubble(text, role) {
   const row = document.createElement('div');
   row.className = `row ${role}`;
-
-  if (role === 'doctor') {
+  if (role === 'doctor-bot') {
     const icon = document.createElement('div');
     icon.className = 'icon';
-    icon.textContent = '⚕';
+    icon.textContent = '🤖';
     row.appendChild(icon);
   }
-
   const bub = document.createElement('div');
   bub.className = 'bubble';
   bub.textContent = text;
   row.appendChild(bub);
-
-  // Append the result card (with a "why" trace panel) if this turn diagnosed something
-  if (extra && extra.type === 'diagnosed') {
-    bub.classList.add('has-card');
-    whyId += 1;
-    const panelId = `why-panel-${whyId}`;
-
-    const card = document.createElement('div');
-    card.className = 'result-card';
-
-    // extra.matched already arrives ranked most clinically significant
-    // first (see SEVERITY ranking in app.py); show that ranking with a
-    // severity chip per fact rather than an unordered list of names.
-    const severities = extra.severities || {};
-    const factsHtml = extra.matched
-      .map(f => {
-        const sev = severities[f] || 3;
-        return `<span>${f.replace(/_/g, ' ')} <b class="sev sev-${sev}">${sev}/5</b></span>`;
-      })
-      .join('');
-
-    card.innerHTML = `
-      <div class="result-head">
-        <span class="ic">&#10003;</span>
-        <div>
-          <div class="label">This screening points to</div>
-          <h2>${formatDiseaseName(extra.disease)}</h2>
-        </div>
-      </div>
-      <div class="result-body">
-        <button class="why-toggle" aria-expanded="false" data-target="${panelId}">
-          <span>See exactly how this was decided</span>
-          <span class="chev">&#8964;</span>
-        </button>
-        <div class="why-panel" id="${panelId}">
-          <div class="fact-list">${factsHtml}</div>
-          <div class="math">${extra.reason === 'primary'
-            ? 'One <b>hallmark symptom</b> above was answered yes &mdash; on its own, that was enough to return this result, without needing to reach the full fact count.'
-            : `<b>${extra.count}</b> of <b>${extra.threshold}</b> required facts were reported &mdash; threshold reached, so this result was returned.`}</div>
-        </div>
-        <div class="disclaimer-line">
-          This is a screening result based only on what you shared here &mdash; not a lab-confirmed diagnosis. Please follow up with a clinician for proper testing.
-        </div>
-      </div>`;
-    bub.appendChild(card);
-  }
-
   chatEl.appendChild(row);
   chatEl.scrollTop = chatEl.scrollHeight;
   return row;
 }
 
-// Delegate why-toggle clicks (cards are added dynamically)
-chatEl.addEventListener('click', (e) => {
-  const toggle = e.target.closest('.why-toggle');
-  if (!toggle) return;
-  const panel = document.getElementById(toggle.dataset.target);
-  const open = panel.classList.toggle('open');
-  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-});
-
-function showTyping() {
+function addDraftCard(draft) {
   const row = document.createElement('div');
-  row.className = 'row doctor';
-  row.id = 'typing-row';
+  row.className = 'row doctor-bot';
 
   const icon = document.createElement('div');
   icon.className = 'icon';
-  icon.textContent = '⚕';
+  icon.textContent = '🤖';
+  row.appendChild(icon);
 
+  const card = document.createElement('div');
+  card.className = 'draft-card';
+
+  const symptomsHtml = draft.symptoms.map(s => `
+    <div class="symptom-item">
+      <div class="q">
+        ${s.text}
+        <div class="fact">${s.fact}</div>
+      </div>
+      <div class="tags">
+        ${s.primary ? '<span class="primarytag">hallmark</span>' : ''}
+        <span class="sevtag sev-${s.severity}">${s.severity}/5</span>
+      </div>
+    </div>`).join('');
+
+  card.innerHTML = `
+    <div class="draft-head">
+      <div>
+        <div class="label">Draft &mdash; unconfirmed</div>
+        <h2>${draft.name.replace(/_/g, ' ')}</h2>
+      </div>
+    </div>
+    <div class="draft-body">
+      <div class="draft-row"><span class="k">Category</span><span class="v">${draft.category}</span></div>
+      <div class="draft-row"><span class="k">Confirmation threshold</span><span class="v">${draft.threshold} of ${draft.symptoms.filter(s=>!s.primary).length} non-hallmark facts</span></div>
+      ${symptomsHtml}
+    </div>
+    <div class="note">A <b>hallmark</b> symptom confirms this condition on its own, without needing the threshold count. Everything else counts toward the plain threshold.</div>
+    <div class="draft-actions">
+      <button class="btn-confirm">Add to Knowledge Base</button>
+      <button class="btn-discard">Discard draft</button>
+    </div>`;
+
+  card.querySelector('.btn-confirm').addEventListener('click', () => confirmDraft(draft, card));
+  card.querySelector('.btn-discard').addEventListener('click', () => discardDraft(card));
+
+  row.appendChild(card);
+  chatEl.appendChild(row);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+async function confirmDraft(draft, card) {
+  const btn = card.querySelector('.btn-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+  try {
+    const res = await fetch('/doctor/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ draft })
+    });
+    const data = await res.json();
+    card.querySelectorAll('.draft-actions, .note').forEach(el => el.remove());
+    if (data.ok) {
+      addBubble(data.message, 'doctor-bot');
+    } else {
+      addBubble(`Could not add this: ${data.error}`, 'doctor-bot');
+    }
+    document.getElementById('bar').style.display = 'none';
+    newChatBar.style.display = 'flex';
+  } catch {
+    btn.disabled = false;
+    btn.textContent = 'Add to Knowledge Base';
+    addBubble('Something went wrong saving this. Please try again.', 'doctor-bot');
+  }
+}
+
+async function discardDraft(card) {
+  await fetch('/doctor/discard', { method: 'POST' });
+  card.querySelectorAll('.draft-actions, .note').forEach(el => el.remove());
+  addBubble('Draft discarded — nothing was added.', 'doctor-bot');
+  document.getElementById('bar').style.display = 'none';
+  newChatBar.style.display = 'flex';
+}
+
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'row doctor-bot';
+  row.id = 'typing-row';
+  const icon = document.createElement('div');
+  icon.className = 'icon';
+  icon.textContent = '🤖';
   const dots = document.createElement('div');
   dots.className = 'typing-dots';
   dots.innerHTML = '<span></span><span></span><span></span>';
-
   row.appendChild(icon);
   row.appendChild(dots);
   chatEl.appendChild(row);
   chatEl.scrollTop = chatEl.scrollHeight;
 }
-
 function hideTyping() {
   const el = document.getElementById('typing-row');
   if (el) el.remove();
 }
-
 function setEnabled(on) {
   txtEl.disabled = !on;
   btnEl.disabled = !on;
   if (on) txtEl.focus();
 }
 
-/* ---- Auto-resize textarea ---- */
 txtEl.addEventListener('input', () => {
   txtEl.style.height = 'auto';
   txtEl.style.height = Math.min(txtEl.scrollHeight, 90) + 'px';
 });
 
-/* ---- Send ---- */
 async function send() {
   const text = txtEl.value.trim();
   if (!text || !session) return;
 
   txtEl.value = '';
   txtEl.style.height = 'auto';
-  addBubble(text, 'patient');
+  addBubble(text, 'doctor-you');
   setEnabled(false);
   showTyping();
 
   try {
-    const res = await fetch('/chat', {
+    const res = await fetch('/doctor/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, session })
@@ -480,24 +488,16 @@ async function send() {
     const data = await res.json();
     hideTyping();
     session = data.session;
+    addBubble(data.message, 'doctor-bot');
 
-    // Show the result card only when Prolog actually confirmed a disease
-    let extra = null;
-    if (data.debug?.prolog?.type === 'diagnosed') {
-      extra = data.debug.prolog;
-    }
-
-    addBubble(data.message, 'doctor', extra);
-
-    if (session.done) {
-      document.getElementById('bar').style.display = 'none';
-      newChatBar.style.display = 'flex';
+    if (data.draft) {
+      addDraftCard(data.draft);
     } else {
       setEnabled(true);
     }
   } catch (err) {
     hideTyping();
-    addBubble('Something went wrong. Please try again.', 'doctor');
+    addBubble('Something went wrong. Please try again.', 'doctor-bot');
     setEnabled(true);
   }
 }
@@ -510,19 +510,18 @@ txtEl.addEventListener('keydown', e => {
 newChatBtn.addEventListener('click', restartChat);
 restartBtn.addEventListener('click', restartChat);
 
-/* ---- Start ---- */
 async function startSession() {
   showTyping();
   try {
-    const res = await fetch('/start', { method: 'POST' });
+    const res = await fetch('/doctor/start', { method: 'POST' });
     const data = await res.json();
     hideTyping();
     session = data.session;
-    addBubble(data.message, 'doctor');
+    addBubble(data.message, 'doctor-bot');
     setEnabled(true);
   } catch {
     hideTyping();
-    addBubble('Could not connect to the server. Make sure app.py is running.', 'doctor');
+    addBubble('Could not connect to the server. Make sure app.py is running.', 'doctor-bot');
   }
 }
 

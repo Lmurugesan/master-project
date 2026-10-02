@@ -40,11 +40,18 @@ def _write_diseases(diseases, output_dir):
     lines = ['% AUTO-GENERATED from diseases.yaml — do not edit directly\n']
     for name, d in diseases.items():
         lines.append(f'disease({name}, {d["threshold"]}, [')
-        qs = d['questions']
+        # Ask the most clinically important (highest-severity) question
+        # first within each disease — this is the "which question should
+        # it ask first" ranking, not just a flat fixed order.
+        qs = sorted(d['questions'], key=lambda q: -q.get('severity', 3))
         for i, q in enumerate(qs):
             comma = ',' if i < len(qs) - 1 else ''
             text = _escape(q['text'])
-            lines.append(f"    '{text}|{q['fact']}'{comma}")
+            # A trailing '|primary' marks a hallmark symptom: confirming
+            # it alone is enough, without needing to also hit the plain
+            # fact-count threshold. See diseases.yaml's comment block.
+            tag = '|primary' if q.get('primary') else ''
+            lines.append(f"    '{text}|{q['fact']}{tag}'{comma}")
         lines.append(']).\n')
     with open(os.path.join(output_dir, 'diseases.pl'), 'w') as f:
         f.write('\n'.join(lines))

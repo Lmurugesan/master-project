@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 620" width="740" height="620" font-family="Times New Roman, serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="black"/>
+    </marker>
+  </defs>
+
+  <style>
+    .box { fill: none; stroke: black; stroke-width: 1.1; }
+    .emph { fill: none; stroke: black; stroke-width: 2.2; }
+    .lbl { font-size: 11px; fill: black; }
+    .lblB { font-size: 11px; font-weight: bold; fill: black; }
+    .cap { font-size: 10px; fill: black; }
+    .edge { stroke: black; stroke-width: 1; fill: none; marker-end: url(#arrow); }
+    .edgeD { stroke: black; stroke-width: 1; fill: none; stroke-dasharray: 4 3; marker-end: url(#arrow); }
+  </style>
+
+  <!-- Top: recognized symptom -->
+  <rect x="240" y="16" width="260" height="40" class="box"/>
+  <text x="370" y="40" text-anchor="middle" class="lbl">Opening symptom recognized:  cough</text>
+
+  <!-- Routed candidate set -->
+  <rect x="205" y="82" width="330" height="40" class="box"/>
+  <text x="370" y="100" text-anchor="middle" class="lbl">Candidate set (routed from cough):</text>
+  <text x="370" y="114" text-anchor="middle" class="lblB">{ asthma, tuberculosis }</text>
+
+  <!-- ================= LEFT BRANCH: ASTHMA ================= -->
+  <rect x="40" y="165" width="270" height="38" class="box"/>
+  <text x="175" y="182" text-anchor="middle" class="lblB">Asthma</text>
+  <text x="175" y="196" text-anchor="middle" class="cap">confirmation threshold = 2</text>
+
+  <rect x="55" y="225" width="240" height="30" class="box"/>
+  <text x="175" y="244" text-anchor="middle" class="lbl">chronic_cough?  &#8594;  no   (count 0)</text>
+
+  <rect x="55" y="268" width="240" height="30" class="box"/>
+  <text x="175" y="287" text-anchor="middle" class="lbl">chest_tightness?  &#8594;  no   (count 0)</text>
+
+  <rect x="55" y="311" width="240" height="30" class="box"/>
+  <text x="175" y="330" text-anchor="middle" class="lbl">wheezing?  &#8594;  no   (count 0)</text>
+
+  <rect x="55" y="354" width="240" height="30" class="box"/>
+  <text x="175" y="373" text-anchor="middle" class="lbl">exercise_triggered?  &#8594;  no   (count 0)</text>
+
+  <rect x="70" y="404" width="210" height="38" class="emph"/>
+  <text x="175" y="428" text-anchor="middle" class="lblB">Ruled out   ( 0 &lt; 2 )</text>
+
+  <!-- ================= RIGHT BRANCH: TUBERCULOSIS ================= -->
+  <rect x="430" y="165" width="270" height="38" class="box"/>
+  <text x="565" y="182" text-anchor="middle" class="lblB">Tuberculosis</text>
+  <text x="565" y="196" text-anchor="middle" class="cap">confirmation threshold = 2</text>
+
+  <rect x="445" y="235" width="240" height="30" class="box"/>
+  <text x="565" y="254" text-anchor="middle" class="lbl">persistent_cough?  &#8594;  yes   (count 1)</text>
+
+  <rect x="445" y="300" width="240" height="30" class="box"/>
+  <text x="565" y="319" text-anchor="middle" class="lbl">night_sweats?  &#8594;  yes   (count 2)</text>
+
+  <rect x="460" y="360" width="210" height="38" class="emph"/>
+  <text x="565" y="384" text-anchor="middle" class="lblB">Confirmed   ( 2 &#8805; 2 )</text>
+
+  <!-- ================= RESULT ================= -->
+  <rect x="215" y="500" width="310" height="70" class="emph"/>
+  <text x="370" y="522" text-anchor="middle" class="lblB">Result:  TUBERCULOSIS</text>
+  <text x="370" y="540" text-anchor="middle" class="cap">Reasons (confirmed facts):</text>
+  <text x="370" y="554" text-anchor="middle" class="lbl">persistent_cough,  night_sweats</text>
+
+  <!-- ================= EDGES ================= -->
+  <path class="edge" d="M370,56 L370,82"/>
+  <path class="edge" d="M290,122 L200,165"/>
+  <path class="edge" d="M450,122 L555,165"/>
+
+  <path class="edge" d="M175,203 L175,225"/>
+  <path class="edge" d="M175,255 L175,268"/>
+  <path class="edge" d="M175,298 L175,311"/>
+  <path class="edge" d="M175,341 L175,354"/>
+  <path class="edge" d="M175,384 L175,404"/>
+
+  <path class="edge" d="M565,203 L565,235"/>
+  <path class="edge" d="M565,265 L565,300"/>
+  <path class="edge" d="M565,330 L565,360"/>
+
+  <path class="edgeD" d="M175,442 L260,500"/>
+  <text x="30" y="470" class="cap">(no confirmation on this</text>
+  <text x="30" y="483" class="cap">branch; continue to next</text>
+  <text x="30" y="496" class="cap">candidate disease)</text>
+
+  <path class="edge" d="M565,398 L480,500"/>
+
+  <!-- caption -->
+  <text x="370" y="600" text-anchor="middle" class="cap">Fig. Y. Reasoning trace for the Asthma-vs.-Tuberculosis dialogue (Case Study VI-B).</text>
+</svg>

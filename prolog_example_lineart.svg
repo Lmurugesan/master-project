@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 430" width="620" height="430" font-family="Times New Roman, serif">
+  <style>
+    .box { fill: none; stroke: black; stroke-width: 1.2; }
+    .titlebar { fill: none; stroke: black; stroke-width: 1.2; }
+    .dot { fill: none; stroke: black; stroke-width: 1; }
+    .code { font-family: 'Courier New', monospace; font-size: 12px; fill: black; }
+    .comment { font-family: 'Courier New', monospace; font-size: 12px; fill: black; font-style: italic; }
+    .cap { font-size: 10px; fill: black; font-family: 'Times New Roman', serif; }
+  </style>
+
+  <!-- window frame -->
+  <rect x="20" y="20" width="580" height="350" class="box"/>
+  <line x1="20" y1="50" x2="600" y2="50" class="box"/>
+  <circle cx="38" cy="35" r="5" class="dot"/>
+  <circle cx="56" cy="35" r="5" class="dot"/>
+  <circle cx="74" cy="35" r="5" class="dot"/>
+  <text x="310" y="39" text-anchor="middle" class="cap">swipl</text>
+
+  <!-- code lines -->
+  <text x="34" y="76" class="code">?- assertz(fact(fatigue)).</text>
+  <text x="34" y="94" class="code">true.</text>
+
+  <text x="34" y="122" class="code">?- assertz(fact(pale_skin)).</text>
+  <text x="34" y="140" class="code">true.</text>
+
+  <text x="34" y="172" class="comment">% anemia(Threshold=2) confirmed once 2 of its facts hold</text>
+  <text x="34" y="190" class="code">?- disease(anemia, Threshold, Questions),</text>
+  <text x="60" y="208" class="code">findall(F, (member(Q,Questions),</text>
+  <text x="94" y="226" class="code">split_string(Q,"|","",[_,F]),</text>
+  <text x="94" y="244" class="code">fact(F)), Confirmed),</text>
+  <text x="60" y="262" class="code">length(Confirmed, Count),</text>
+  <text x="60" y="280" class="code">Count &gt;= Threshold.</text>
+
+  <text x="34" y="308" class="code">Threshold = 2,</text>
+  <text x="34" y="326" class="code">Confirmed = ["fatigue", "pale_skin"],</text>
+  <text x="34" y="344" class="code">Count = 2.</text>
+
+  <!-- caption -->
+  <text x="310" y="404" text-anchor="middle" class="cap">Fig. Z. A simplified SWI-Prolog session: asserting two symptom facts, then</text>
+  <text x="310" y="418" text-anchor="middle" class="cap">querying whether they satisfy the Anemia confirmation rule (threshold = 2).</text>
+</svg>
