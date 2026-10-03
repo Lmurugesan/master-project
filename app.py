@@ -65,6 +65,17 @@ def reload_config():
     CATEGORY = CONFIG.get('categories', {})
 
 
+ACRONYM_DISEASES = {'uti'}
+
+
+def formatted_disease_name(name):
+    # "uti" needs its own capitalization — "UTI", not "Uti" (what plain
+    # title-casing would produce). Mirrors static/index.html's JS version.
+    if name in ACRONYM_DISEASES:
+        return name.upper()
+    return name.replace('_', ' ').title()
+
+
 reload_config()
 
 app = Flask(__name__, static_folder='static')
@@ -79,13 +90,16 @@ SYMPTOM_KEYWORDS = {
     'headache':              ['headache', 'head ache', 'head pain', 'migraine', 'head hurts'],
     'elevated_bp':           ['high blood pressure', 'high bp', 'elevated bp', 'hypertension', 'blood pressure high'],
     'elevated_glucose':      ['high blood sugar', 'high glucose', 'elevated glucose', 'blood sugar', 'sugar level'],
-    'polyuria':              ['urinating a lot', 'pee a lot', 'urinate often', 'frequent urination', 'urinating more'],
+    'polyuria':              ['urinating a lot', 'pee a lot', 'urinate often', 'frequent urination', 'urinating more',
+                              'bathroom constantly', 'bathroom all the time', 'going to the bathroom'],
     'polydipsia':            ['very thirsty', 'always thirsty', 'excessive thirst', 'drinking a lot of water'],
+    'increased_hunger':      ['very hungry', 'always hungry', 'increased hunger', 'hungrier than usual', 'eating more than usual'],
     'pale_skin':             ['pale', 'pale skin', 'pallor', 'skin looks pale', 'look pale'],
     'dizziness':             ['dizzy', 'dizziness', 'lightheaded', 'light headed', 'spinning'],
     'dysuria':               ['burning when i urinate', 'burning urination', 'pain urinating', 'painful urination',
                               'burning pee', 'stinging urination'],
-    'urinary_frequency':     ['urinate frequently', 'frequent urination', 'bathroom often', 'pee often', 'need to urinate'],
+    'urinary_frequency':     ['urinate frequently', 'frequent urination', 'bathroom often', 'pee often', 'need to urinate',
+                              'bathroom constantly', 'bathroom all the time', 'going to the bathroom'],
     'cough':                 ['cough', 'coughing'],
     'shortness_of_breath':   ['short of breath', 'shortness of breath', 'breathless', 'hard to breathe',
                               'difficulty breathing', 'out of breath'],
@@ -179,19 +193,90 @@ def detect_yes_no(text):
     return 'unrecognized'
 
 
-def disease_order_for(confirmed_facts):
-    # Pick the symptom with the most specific (shortest) routing list.
-    # Only investigate diseases that are medically related to what the patient said.
-    # Never append unrelated diseases — a headache patient should never be asked about UTI.
-    best_route = None
-    best_len   = 999
-    for fact in confirmed_facts:
-        if fact in SYMPTOM_ROUTING:
-            route = SYMPTOM_ROUTING[fact]
-            if len(route) < best_len:
-                best_len   = len(route)
-                best_route = route
-    return best_route if best_route else ALL_DISEASES
+def narrow_candidates(current, fact):
+    """
+    Progressively narrow the active differential by intersecting it with
+    the routing set of one newly recognized symptom — this is what lets
+    the system demonstrate real multi-step reasoning rather than picking
+    a candidate list once from the opening message and never revisiting
+    it. For example: thirst alone suggests {diabetes, diabetes_insipidus,
+    dehydration, kidney_disorder}; adding frequent urination narrows that
+    to {diabetes, diabetes_insipidus, kidney_disorder}, since dehydration
+    does not typically also cause excess urination; adding increased
+    hunger narrows it to {diabetes} alone.
+
+    `current` is the candidate list before this fact (None the first
+    time). Never narrows to empty — if a fact shares nothing with the
+    current candidates (e.g. an unrelated routing symptom recognized
+    later in the conversation), the existing candidates are kept rather
+    than wiped out, since that's almost certainly noise, not a real
+    rule-out.
+
+    Order is preserved from whichever routing list established it first,
+    NOT re-sorted by ALL_DISEASES' declaration order each time. Each
+    symptom's routing list in diseases.yaml is hand-authored with its own
+    clinical priority — e.g. elevated_bp: [hypertension, diabetes] means
+    a patient reporting high blood pressure should be asked about
+    hypertension before diabetes. Re-sorting by dict order on every
+    narrowing step would silently discard that priority (a patient
+    saying "I have high blood pressure" would get asked about blood
+    sugar first, simply because diabetes happens to be declared earlier
+    in diseases.yaml) — subsequent symptoms may only filter the existing
+    order down, never re-rank it.
+    """
+    if fact not in SYMPTOM_ROUTING:
+        return current
+    route = SYMPTOM_ROUTING[fact]
+    if current is None:
+        return list(route)
+    route_set = set(route)
+    narrowed = [d for d in current if d in route_set]
+    return narrowed if narrowed else current
+
+
+QUESTION_STARTERS = (
+    'what', 'why', 'how', 'when', 'where', 'who', 'which',
+    'is ', 'are ', 'does ', 'do ', 'can ', 'could ', 'should ', 'will ',
+)
+
+
+def looks_like_question(text):
+    """
+    Cheap, fully deterministic gate run BEFORE the LLM clarifier is ever
+    invoked. Only messages that plausibly ask something ("?", or start
+    with a question word) are passed to the LLM; anything else (a vague
+    attempted answer like "little bit" or "past few weeks", a typo, noise)
+    is never sent, and falls straight through to the generic re-prompt.
+
+    This matters because small/local models are unreliable at this
+    judgment call on their own: tested against llama3.2:3b and
+    llama3.1:8b, both regularly treated vague non-question replies as
+    something to define or explain — in one case inventing an unprompted
+    "this can be a sign of an underlying heart condition" for the answer
+    "little bit", which is exactly the kind of unsolicited, borderline
+    diagnostic language this tool must never produce. Gating on a cheap
+    heuristic first removes that failure mode entirely, regardless of
+    which model (or how capable) is configured.
+    """
+    tl = text.strip().lower()
+    if '?' in tl:
+        return True
+    return tl.startswith(QUESTION_STARTERS)
+
+
+def disease_order_for(session, new_facts):
+    """
+    Fold each newly recognized fact (in the order it was recognized) into
+    session['candidates'], narrowing the active differential one step at
+    a time, and return the resulting ordered candidate list. Only
+    investigates diseases that are medically related to what the patient
+    has said so far — a headache patient is never asked about UTI.
+    """
+    candidates = session.get('candidates')
+    for fact in new_facts:
+        candidates = narrow_candidates(candidates, fact)
+    session['candidates'] = candidates
+    return candidates if candidates else ALL_DISEASES
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +371,8 @@ CATEGORY_INTRO = {
     'hematologic':    "Let's start by checking for signs related to your blood count.",
     'urinary':        "Let's start by looking into your urinary system.",
     'respiratory':    "Let's start by looking into your respiratory system.",
+    'endocrine':      "Let's also consider other hormonal causes of these symptoms.",
+    'renal':          "Let's also check whether your kidneys could explain this.",
 }
 
 DISEASE_INTRO = {
@@ -295,6 +382,9 @@ DISEASE_INTRO = {
     'uti':          "Okay. I would like to ask you about your urinary symptoms.",
     'asthma':       "Given what you've mentioned, let me check whether this could be related to your airways.",
     'tuberculosis': "I want to rule out one more thing that can cause persistent respiratory symptoms.",
+    'diabetes_insipidus': "Let me ask a few questions to see whether this could be diabetes insipidus rather than diabetes mellitus.",
+    'dehydration':        "Let me check whether simple dehydration could explain this.",
+    'kidney_disorder':    "I'd like to ask about your kidneys, since they can also cause these symptoms.",
 }
 
 RULED_OUT = {
@@ -304,6 +394,9 @@ RULED_OUT = {
     'uti':          "This doesn't look like a urinary tract infection.",
     'asthma':       "Asthma seems less likely based on your answers. Let me check one more related condition.",
     'tuberculosis': "Your answers don't strongly point to tuberculosis. Please do get a chest X-ray to be safe.",
+    'diabetes_insipidus': "That doesn't point to diabetes insipidus. Let me look elsewhere.",
+    'dehydration':        "This doesn't look like simple dehydration.",
+    'kidney_disorder':    "Your kidneys don't seem to be the main issue here.",
 }
 
 # Confident, disease-specific reason for each confirmed fact — used to explain
@@ -314,7 +407,20 @@ FACT_REASON = {
     'high_hba1c':               "A blood test has confirmed high HbA1c, showing sustained high blood sugar.",
     'polyuria':                  "You are urinating far more than normal — a direct result of excess glucose in the urine.",
     'polydipsia':                "You are experiencing extreme thirst — the body's direct response to fluid loss from polyuria.",
+    'increased_hunger':          "You are hungrier than usual even after eating, caused by your cells being unable to use the glucose in your blood.",
     'fatigue':                   "You are experiencing persistent fatigue, caused by cells not getting the glucose they need.",
+    # diabetes insipidus
+    'normal_glucose':            "Your blood sugar has tested normal despite the thirst and urination, pointing away from diabetes mellitus.",
+    'dilute_urine':               "Your urine is unusually pale or clear, consistent with the kidneys failing to concentrate it.",
+    'nocturia':                   "You wake up repeatedly at night to urinate, consistent with an inability to concentrate urine overnight.",
+    # dehydration
+    'low_fluid_intake':          "You've had reduced fluid intake or recent fluid loss, directly explaining the thirst.",
+    'dry_mouth':                  "Your mouth and skin feel unusually dry, a direct sign of fluid loss.",
+    'reduced_urination':         "You are urinating less than usual with darker urine, consistent with the body conserving fluid.",
+    # kidney disorder
+    'leg_swelling':               "You have swelling in your legs or around your eyes, a direct sign of fluid retention from reduced kidney function.",
+    'foamy_urine':                "Your urine has looked foamy, consistent with protein leaking through impaired kidneys.",
+    'flank_pain':                  "You have pain in your lower back or sides, over the kidneys.",
     # hypertension
     'history_of_hypertension':  "You have already been diagnosed with high blood pressure in the past.",
     'on_bp_medication':          "You are currently on blood pressure medication, confirming an existing hypertension diagnosis.",
@@ -441,6 +547,7 @@ def start():
         'facts':        [],
         'asked':        [],
         'disease_order': ALL_DISEASES,
+        'candidates':   None,
         'pending_fact': None,
         'pending_question': None,
         'order_set':    False,
@@ -464,18 +571,61 @@ def chat():
     pending_fact  = session.get('pending_fact')
     pending_question = session.get('pending_question')
 
+    # Facts newly recognized THIS turn (as opposed to ones already known
+    # from earlier turns) — these are what narrow the candidate set below.
+    new_facts_this_turn = []
+
     # --- Handle answer to the current pending question ---
     if pending_fact:
         answer = detect_yes_no(user_message)
 
         if answer == 'unrecognized':
-            # Don't record anything or advance. If the patient appears to be
-            # asking a genuine clarifying question (e.g. "what is HbA1c"),
-            # try answering it via the configured LLM before falling back to
-            # the generic re-prompt — this never bypasses the pending
-            # question, it only optionally explains it first.
+            # Not a yes/no. A message that reads as a question (e.g. "what
+            # is wheezing?") must NOT be mined for volunteered symptoms —
+            # the LLM extractor will happily pull "wheezing" out of "what
+            # IS wheezing?" even though the patient never said they have
+            # it, silently adding a fact they never confirmed and
+            # corrupting the reasoning trace. So question-shaped messages
+            # skip extraction entirely and go straight to the clarifier
+            # below. Only a non-question message is checked for a
+            # volunteered symptom (e.g. "I also have frequent urination"
+            # while a different question is still pending) — pulling that
+            # out matters, otherwise free-form symptom mentions sent
+            # mid-question would be silently discarded as a failed yes/no
+            # attempt. The pending question is re-asked regardless.
+            volunteered = []
+            if not looks_like_question(user_message):
+                volunteered = [s for s in extract_symptoms_smart(user_message) if s not in facts]
+            for sym in volunteered:
+                facts.append(sym)
+                new_facts_this_turn.append(sym)
+                if sym not in asked:
+                    asked.append(sym)
+
+            if volunteered:
+                # Narrow the differential with the volunteered symptom(s) too
+                # — otherwise information given mid-question would have no
+                # effect on candidate routing at all.
+                disease_order_for(session, volunteered)
+                reply = (
+                    "Noted, thank you. Let's also finish the question I asked:\n\n"
+                    + (pending_question or '')
+                ).strip()
+                session['facts'] = facts
+                session['asked'] = asked
+                return jsonify({
+                    'message': reply,
+                    'session': session,
+                    'debug': {'facts': facts, 'asked': asked}
+                })
+
+            # If the patient appears to be asking a genuine clarifying
+            # question (e.g. "what is HbA1c"), try answering it via the
+            # configured LLM before falling back to the generic re-prompt —
+            # this never bypasses the pending question, it only optionally
+            # explains it first.
             clarification = None
-            if LLM_PROVIDER != 'none':
+            if LLM_PROVIDER != 'none' and looks_like_question(user_message):
                 clarification = llm_clarify(user_message, pending_question)
 
             if clarification:
@@ -494,6 +644,7 @@ def chat():
 
         if answer == 'yes' and pending_fact not in facts:
             facts.append(pending_fact)
+            new_facts_this_turn.append(pending_fact)
         if pending_fact not in asked:
             asked.append(pending_fact)
         session['pending_fact'] = None
@@ -503,6 +654,7 @@ def chat():
     for sym in extract_symptoms_smart(user_message):
         if sym not in facts:
             facts.append(sym)
+            new_facts_this_turn.append(sym)
         if sym not in asked:
             asked.append(sym)
 
@@ -523,11 +675,24 @@ def chat():
             'debug': {'facts': facts, 'asked': asked}
         })
 
-    # --- Set disease order once we know the first symptom ---
-    if not session['order_set'] and facts:
-        disease_order = disease_order_for(facts)
-        session['disease_order'] = disease_order
+    # --- Narrow the active differential with whatever was recognized this
+    # turn. This runs every turn (not just once) so the candidate set keeps
+    # shrinking as the conversation progresses — real multi-step narrowing,
+    # not a single lookup from the opening message. ---
+    candidates_before = session.get('candidates')
+    if new_facts_this_turn:
+        disease_order = disease_order_for(session, new_facts_this_turn)
         session['order_set'] = True
+    elif not session['order_set']:
+        disease_order = ALL_DISEASES
+    else:
+        disease_order = session.get('candidates') or ALL_DISEASES
+    session['disease_order'] = disease_order
+
+    narrowing_note = None
+    if new_facts_this_turn and session.get('candidates') != candidates_before and len(disease_order) > 1:
+        names = ', '.join(formatted_disease_name(d) for d in disease_order)
+        narrowing_note = f"*Candidates under consideration: {names}.*"
 
     # --- Run Prolog ---
     result = run_prolog(facts, asked, disease_order)
@@ -550,6 +715,8 @@ def chat():
     session['asked'] = asked
 
     response = doctor_response_for(result, session)
+    if narrowing_note and result['type'] == 'need_answer':
+        response = f"{narrowing_note}\n\n{response}"
 
     return jsonify({
         'message': response,

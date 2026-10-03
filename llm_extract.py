@@ -16,6 +16,8 @@ Supported providers (set LLM_PROVIDER to one of these):
     anthropic   -> Claude, via ANTHROPIC_API_KEY   (default model: claude-3-5-haiku-latest)
     openai      -> GPT,    via OPENAI_API_KEY       (default model: gpt-4o-mini)
     deepseek    -> DeepSeek, via DEEPSEEK_API_KEY    (default model: deepseek-chat)
+    local       -> a locally hosted model served by Ollama (http://localhost:11434),
+                   no API key required (default model: llama3.2:1b)
     none        -> disabled; always falls back to the keyword lexicon
 
 If LLM_PROVIDER is unset, no key is present, the network call fails, or the
@@ -48,6 +50,7 @@ Symptom codes and what they mean:
   elevated_glucose     - known/reported high blood sugar or glucose
   polyuria              - urinating much more than usual
   polydipsia            - excessive/unusual thirst
+  increased_hunger      - hungrier than usual, even after eating
   pale_skin             - skin looking unusually pale
   dizziness             - dizziness, lightheadedness
   dysuria                - pain or burning during urination
@@ -71,10 +74,16 @@ respond with []."""
 
 VALID_CODES = {
     'fatigue', 'headache', 'elevated_bp', 'elevated_glucose', 'polyuria',
-    'polydipsia', 'pale_skin', 'dizziness', 'dysuria', 'urinary_frequency',
-    'cough', 'shortness_of_breath', 'fever', 'night_sweats', 'weight_loss',
-    'nausea', 'chest_pain', 'persistent_cough', 'chronic_cough', 'wheezing',
+    'polydipsia', 'increased_hunger', 'pale_skin', 'dizziness', 'dysuria',
+    'urinary_frequency', 'cough', 'shortness_of_breath', 'fever',
+    'night_sweats', 'weight_loss', 'nausea', 'chest_pain', 'persistent_cough',
+    'chronic_cough', 'wheezing',
 }
+# This must stay in sync with SYMPTOM_KEYWORDS' key set in app.py — both
+# are the same free-text recognition vocabulary, just two different ways
+# of populating it (deterministic keywords vs. the LLM). Facts that only
+# ever get confirmed via an explicit yes/no follow-up question (e.g.
+# chest_tightness, high_hba1c) are deliberately excluded from both.
 
 
 def _post_json(url, headers, payload):
@@ -145,10 +154,27 @@ def _call_deepseek(prompt):
     return data['choices'][0]['message']['content']
 
 
+def _call_local(prompt):
+    # Ollama's /api/generate is a local HTTP endpoint — no API key, no
+    # network egress. Requires `ollama serve` running and the model pulled
+    # (e.g. `ollama pull llama3.2:1b`); if Ollama isn't reachable, this
+    # raises URLError like any other provider and the caller degrades to
+    # the keyword lexicon exactly as it would for a failed API call.
+    model = os.environ.get('LLM_MODEL', 'llama3.2:1b')
+    host = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
+    data = _post_json(
+        f'{host}/api/generate',
+        {},
+        {'model': model, 'prompt': prompt, 'stream': False},
+    )
+    return data['response']
+
+
 _PROVIDERS = {
     'anthropic': _call_anthropic,
     'openai': _call_openai,
     'deepseek': _call_deepseek,
+    'local': _call_local,
 }
 
 
@@ -179,15 +205,26 @@ Instead of answering yes or no, they wrote:
 
 "{message}"
 
-If this is a genuine question asking what a term means, or why the question \
-is being asked, answer it clearly and briefly in plain, reassuring language a \
+A genuine clarifying question explicitly asks what a medical term means or \
+why it's being asked — for example "what is HbA1c" or "why does that matter". \
+Only in that case, answer clearly and briefly in plain, reassuring language a \
 patient would understand — 2 to 4 sentences. Do not diagnose them or suggest \
-what their answer should be. End your reply by naturally leading back into \
-the original question so the patient knows to answer it.
+what their answer should be. The original question will automatically be \
+shown again right after your reply, so do NOT repeat or rephrase the \
+question yourself — just answer what they asked, and stop.
 
-If the patient's message is NOT a genuine clarifying question — for example, \
-if it is gibberish, off-topic, or an unrecognized attempt to answer — respond \
-with exactly: NOT_A_QUESTION
+In every other case — including a typo, a vague or partial attempt to \
+answer (e.g. "past few weeks", "kind of", "maybe"), gibberish, or anything \
+off-topic — this is NOT a clarifying question, even if it's unclear what \
+the patient meant. Do not try to interpret it, explain any words in it, or \
+guess what they meant. In every one of these cases, respond with exactly \
+the following and nothing else: NOT_A_QUESTION
+
+Examples:
+  Question was "Do you have a cough?" Patient wrote "past few weeks" ->
+  NOT_A_QUESTION (this is a vague attempt to answer, not a question)
+  Patient wrote "what does that mean" -> genuine clarifying question, answer it
+  Patient wrote "asdkfj" -> NOT_A_QUESTION
 
 Respond with ONLY your reply text, or exactly NOT_A_QUESTION."""
 
@@ -214,8 +251,28 @@ def llm_clarify(message, pending_question):
         if raw is None:
             return None
         raw = raw.strip()
-        if not raw or raw.startswith('NOT_A_QUESTION'):
+        # Case-insensitive and tolerant of minor punctuation the model
+        # might add — smaller/local models don't always reproduce an exact
+        # literal like "NOT_A_QUESTION" verbatim (e.g. "Not_a_question."),
+        # and treating a near-miss as a real clarification would show the
+        # patient garbage instead of falling back cleanly.
+        if not raw or raw.upper().lstrip('.').startswith('NOT_A_QUESTION'):
             return None
+        # Despite the prompt instructing it not to, some models (especially
+        # smaller/local ones) still restate the original question at the
+        # end of their reply. Since the caller always appends
+        # pending_question itself right after this return value, an
+        # unstripped restatement would show the patient the same question
+        # twice in a row. Strip an exact trailing repeat defensively,
+        # rather than relying on every model to follow the instruction.
+        pq = (pending_question or '').strip().rstrip('?').strip().lower()
+        if pq:
+            raw_stripped = raw.rstrip()
+            tail = raw_stripped.rstrip('"').rstrip().rstrip('?').strip().lower()
+            if tail.endswith(pq):
+                cut = len(tail) - len(pq)
+                raw_stripped = raw_stripped[:cut].rstrip(' "\n')
+                raw = raw_stripped.rstrip('.,:;-—').strip() or raw
         return raw
     except (urllib.error.URLError, KeyError, IndexError, TimeoutError, ValueError):
         return None

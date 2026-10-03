@@ -40,12 +40,15 @@
 # a staged chain — category, then specific disease — not a single flat
 # list of unrelated diseases.
 categories:
-  diabetes:      metabolic
-  hypertension:  cardiovascular
-  anemia:        hematologic
-  uti:           urinary
-  asthma:        respiratory
-  tuberculosis:  respiratory
+  diabetes:            metabolic
+  diabetes_insipidus:  endocrine
+  dehydration:         metabolic
+  kidney_disorder:     renal
+  hypertension:        cardiovascular
+  anemia:              hematologic
+  uti:                 urinary
+  asthma:              respiratory
+  tuberculosis:        respiratory
 
 diseases:
 
@@ -67,10 +70,67 @@ diseases:
       - fact: polydipsia
         text: "Are you feeling extremely thirsty most of the time?"
         severity: 3
+      - fact: increased_hunger
+        text: "Have you noticed you're hungrier than usual, even after eating?"
+        severity: 3
       - fact: fatigue
         text: "Are you feeling unusually tired or fatigued?"
         severity: 2
-    related: [hypertension, anemia]
+    related: [hypertension, anemia, diabetes_insipidus, kidney_disorder]
+
+  # The next three conditions overlap with diabetes on thirst and frequent
+  # urination (polydipsia/polyuria) by design — together with diabetes,
+  # they let the system demonstrate genuine differential narrowing as
+  # symptoms accumulate, rather than a single-symptom lookup. See the
+  # progressive-narrowing case study in the paper's evaluation section.
+
+  diabetes_insipidus:
+    threshold: 2
+    entry_symptoms: [polydipsia, polyuria]
+    questions:
+      - fact: normal_glucose
+        text: "Has your blood sugar been tested and come back normal despite the thirst and urination?"
+        severity: 5
+        primary: true
+      - fact: dilute_urine
+        text: "Is your urine usually very pale or clear, even when you've been drinking little water?"
+        severity: 4
+      - fact: nocturia
+        text: "Do you wake up multiple times at night specifically to urinate?"
+        severity: 3
+    related: [diabetes, kidney_disorder]
+
+  dehydration:
+    threshold: 2
+    entry_symptoms: [polydipsia]
+    questions:
+      - fact: low_fluid_intake
+        text: "Have you been drinking noticeably less fluid than usual, or losing fluids from heat, exercise, vomiting, or diarrhea?"
+        severity: 5
+        primary: true
+      - fact: dry_mouth
+        text: "Does your mouth or skin feel unusually dry?"
+        severity: 3
+      - fact: reduced_urination
+        text: "Have you been urinating less than usual, with darker urine?"
+        severity: 4
+    related: []
+
+  kidney_disorder:
+    threshold: 2
+    entry_symptoms: [polyuria, polydipsia]
+    questions:
+      - fact: leg_swelling
+        text: "Have you noticed swelling in your legs, ankles, or around your eyes?"
+        severity: 4
+        primary: true
+      - fact: foamy_urine
+        text: "Has your urine looked foamy or frothy?"
+        severity: 4
+      - fact: flank_pain
+        text: "Do you have pain in your lower back or sides, below the ribs?"
+        severity: 3
+    related: [hypertension, diabetes_insipidus]
 
   hypertension:
     threshold: 2
@@ -180,15 +240,16 @@ symptom_routing:
   fatigue:             [anemia, diabetes, hypertension]
   pale_skin:           [anemia]
   dizziness:           [anemia, hypertension]
-  polyuria:            [diabetes, uti]
-  polydipsia:          [diabetes]
+  polyuria:            [diabetes, diabetes_insipidus, kidney_disorder, uti]
+  polydipsia:          [diabetes, diabetes_insipidus, dehydration, kidney_disorder]
+  increased_hunger:    [diabetes]
   elevated_glucose:    [diabetes, hypertension]
   nausea:              [diabetes, anemia]
   dysuria:             [uti]
-  urinary_frequency:   [uti, diabetes]
+  urinary_frequency:   [uti, diabetes, diabetes_insipidus, kidney_disorder]
   cough:               [asthma, tuberculosis]
   shortness_of_breath: [asthma, tuberculosis, anemia]
   fever:               [tuberculosis, uti]
   night_sweats:        [tuberculosis]
   weight_loss:         [tuberculosis, diabetes]
-  other:               [diabetes, hypertension, anemia, uti, asthma, tuberculosis]
+  other:               [diabetes, hypertension, anemia, uti, asthma, tuberculosis, diabetes_insipidus, dehydration, kidney_disorder]

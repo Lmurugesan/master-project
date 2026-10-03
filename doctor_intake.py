@@ -40,6 +40,33 @@ def slugify(text):
     return s.strip('_')
 
 
+def _unique_fact(slug, existing_facts):
+    # Guard against two symptoms in the same draft colliding on the same
+    # internal fact code (e.g. two questions that both slugify to "fever").
+    if slug not in existing_facts:
+        return slug
+    i = 2
+    while f"{slug}_{i}" in existing_facts:
+        i += 1
+    return f"{slug}_{i}"
+
+
+def _parse_yes_no(text):
+    """
+    Strict yes/no parser for the doctor intake. Returns 'yes', 'no', or
+    None if the answer is ambiguous — callers must re-prompt on None
+    rather than silently defaulting to 'no', which would silently discard
+    whatever the doctor actually typed (e.g. a description meant for the
+    *next* question, mistyped into this prompt).
+    """
+    tl = text.strip().lower()
+    if tl in ('y', 'yes', 'yeah', 'yep', 'true', 'correct'):
+        return 'yes'
+    if tl in ('n', 'no', 'nope', 'not really', 'false'):
+        return 'no'
+    return None
+
+
 def new_session():
     return {
         'stage': 'name',
@@ -94,7 +121,20 @@ def step(session, message):
 
     if stage == 'symptom_fact':
         if msg:
-            session['cur_fact'] = slugify(msg)
+            slug = slugify(msg)
+            if not slug:
+                # Garbage input (e.g. just punctuation) slugifies to
+                # nothing — never silently accept an empty fact code.
+                # Re-prompt instead of advancing with a broken draft.
+                return (
+                    f"I couldn't turn that into a usable short code. Please "
+                    f"use letters, numbers, or spaces — or press enter to "
+                    f"use the suggested \"{session['cur_fact']}\".",
+                    session, None
+                )
+            session['cur_fact'] = slug
+        existing = {s['fact'] for s in session['symptoms']}
+        session['cur_fact'] = _unique_fact(session['cur_fact'], existing)
         session['stage'] = 'symptom_severity'
         return (
             "On a scale of 1 (mild/nonspecific) to 5 (severe/hallmark), "
@@ -118,7 +158,18 @@ def step(session, message):
         )
 
     if stage == 'symptom_primary':
-        is_primary = msg.lower().startswith(('y', 'yes'))
+        yn = _parse_yes_no(msg)
+        if yn is None:
+            # Never silently treat free text here as "no" — that discards
+            # whatever the doctor actually typed (often the start of the
+            # *next* symptom's description, mistyped into this prompt).
+            return (
+                "Just to be clear — should this symptom be enough **on its "
+                "own** to confirm the condition, without needing the others "
+                "too? Please answer yes or no.",
+                session, None
+            )
+        is_primary = (yn == 'yes')
         session['symptoms'].append({
             'fact': session['cur_fact'],
             'text': session['cur_text'],

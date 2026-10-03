@@ -1,0 +1,120 @@
+<mxfile host="app.diagrams.net" agent="claude">
+  <diagram name="System Architecture v4" id="arch-v4">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1040" pageHeight="780" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ============ Lane 1: Doctor Knowledge Acquisition ============ -->
+        <mxCell id="laneDoc" parent="1" value="Doctor Knowledge Acquisition  (gated — never writes automatically)" style="swimlane;html=1;startSize=26;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;">
+          <mxGeometry x="20" y="20" width="1000" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="docChat" parent="laneDoc" value="Doctor&#10;(Web Chat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6a8;strokeColor=#d6b656;fontSize=10.5;" vertex="1">
+          <mxGeometry x="20" y="40" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="docIntake" parent="laneDoc" value="Guided Rule-Intake Dialogue&#10;(doctor_intake.py)&#10;name &#8594; symptoms &#8594; severity 1&#8211;5&#10;&#8594; hallmark? &#8594; threshold" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6a8;strokeColor=#d6b656;fontSize=9.5;" vertex="1">
+          <mxGeometry x="190" y="34" width="230" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="docDraft" parent="laneDoc" value="Structured Draft&#10;(unconfirmed)&#10;facts, severities,&#10;hallmark flags, threshold" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6a8;strokeColor=#d6b656;dashed=1;fontSize=9.5;" vertex="1">
+          <mxGeometry x="470" y="34" width="190" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="docConfirm" parent="laneDoc" value="Doctor Review&#10;&amp; Confirm" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6a8;strokeColor=#d6b656;strokeWidth=2;fontSize=10.5;fontStyle=1;" vertex="1">
+          <mxGeometry x="710" y="40" width="130" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="eDocFlow1" parent="laneDoc" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;" edge="1" source="docChat" target="docIntake">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eDocFlow2" parent="laneDoc" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;" edge="1" source="docIntake" target="docDraft">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eDocFlow3" parent="laneDoc" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;" edge="1" source="docDraft" target="docConfirm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============ Lane 2: Knowledge Base & Reasoning Engine ============ -->
+        <mxCell id="laneKB" parent="1" value="Knowledge Base &amp; Prolog Confirmation Engine" style="swimlane;html=1;startSize=26;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;">
+          <mxGeometry x="20" y="190" width="1000" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="kbYaml" parent="laneKB" value="diseases.yaml&#10;symptom routing &#183; thresholds&#10;severity (1&#8211;5) &#183; hallmark facts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c9ddf7;strokeColor=#6c8ebf;fontSize=9.5;" vertex="1">
+          <mxGeometry x="40" y="40" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kbGen" parent="laneKB" value="generate_prolog.py&#10;(compiles config &#8594; rules)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c9ddf7;strokeColor=#6c8ebf;fontSize=9.5;" vertex="1">
+          <mxGeometry x="300" y="40" width="190" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kbPl" parent="laneKB" value="Generated Prolog Rules&#10;facts.pl &#183; diseases.pl &#183; rules.pl" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c9ddf7;strokeColor=#6c8ebf;fontSize=9.5;" vertex="1">
+          <mxGeometry x="540" y="40" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="kbReload" parent="laneKB" value="Live reload&#10;(no restart needed)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c9ddf7;strokeColor=#6c8ebf;dashed=1;fontSize=9;" vertex="1">
+          <mxGeometry x="800" y="48" width="150" height="54" as="geometry" />
+        </mxCell>
+
+        <mxCell id="kbEngine" parent="laneKB" value="Prolog Confirmation Engine  (web_engine.pl)&#10;goal-directed, backward-chaining&#10;&#8226; narrows the active candidate set after EVERY newly recognized symptom&#10;&#8226; confirms when a hallmark fact is affirmed, OR the fact-count threshold is reached" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9ec4f0;strokeColor=#2f5e9e;strokeWidth=2;fontSize=10;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1">
+          <mxGeometry x="40" y="150" width="910" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="eKb1" parent="laneKB" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;" edge="1" source="docConfirm" target="kbYaml">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="900" y="150"/></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eKb1lbl" parent="laneKB" value="commit only on confirm" style="text;html=1;fontSize=8.5;fontColor=#b38600;" vertex="1" connectable="0">
+          <mxGeometry x="770" y="18" width="160" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="eKb2" parent="laneKB" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;" edge="1" source="kbYaml" target="kbGen">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eKb3" parent="laneKB" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;" edge="1" source="kbGen" target="kbPl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eKb4" parent="laneKB" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;" edge="1" source="kbPl" target="kbReload">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eKb5" parent="laneKB" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;" edge="1" source="kbPl" target="kbEngine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============ Lane 3: Patient Screening ============ -->
+        <mxCell id="laneP" parent="1" value="Patient Screening" style="swimlane;html=1;startSize=26;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;">
+          <mxGeometry x="20" y="460" width="1000" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="pRecog" parent="laneP" value="Symptom Recognition &amp; Answer Classification&#10;default: constrained LLM parser  &#8226;  fallback: keyword lexicon&#10;classifies each answer: affirmative / negative / uncertain / unrecognized" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e0bb;strokeColor=#5f9153;strokeWidth=2;fontSize=10;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1">
+          <mxGeometry x="40" y="44" width="910" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pt1" parent="laneP" value="Patient 1&#10;(Web Chat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1">
+          <mxGeometry x="60" y="170" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pt2" parent="laneP" value="Patient 2&#10;(Web Chat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1">
+          <mxGeometry x="430" y="170" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ptn" parent="laneP" value="Patient n&#10;(Web Chat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1">
+          <mxGeometry x="800" y="170" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="eP1" parent="laneP" value="free-text statement / answer" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;startArrow=block;fontSize=8.5;" edge="1" source="pt1" target="pRecog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eP2" parent="laneP" value="free-text statement / answer" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;startArrow=block;fontSize=8.5;" edge="1" source="pt2" target="pRecog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eP3" parent="laneP" value="free-text statement / answer" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;startArrow=block;fontSize=8.5;" edge="1" source="ptn" target="pRecog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Cross-lane connections between patient recognition and the engine -->
+        <mxCell id="eUp" parent="1" value="recognized symptom codes (validated against fixed vocabulary)" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;fontColor=#2f5e9e;exitX=0.25;exitY=0;entryX=0.25;entryY=1;" edge="1" source="pRecog" target="kbEngine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eDown" parent="1" value="next question / screening result + reasoning trace" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;fontSize=9;fontColor=#5f9153;exitX=0.75;exitY=1;entryX=0.75;entryY=0;" edge="1" source="kbEngine" target="pRecog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cap" parent="1" value="Figure 1: System architecture — doctor-side knowledge acquisition (top), the shared knowledge base and Prolog confirmation engine (middle), and patient-side screening (bottom)." style="text;html=1;align=center;fillColor=none;strokeColor=none;fontSize=11;fontStyle=1;" vertex="1">
+          <mxGeometry x="20" y="730" width="1000" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
